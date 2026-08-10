@@ -9,6 +9,7 @@
 \usepackage{xcolor}
 \usepackage{booktabs}
 \usepackage{url}
+\usepackage{verbatim}
 % Resolves whether the figure sits beside paper.tex (Overleaf upload of paper/
 % alone) or in the repo's figures/ directory.
 \graphicspath{{./}{../figures/}}
@@ -170,10 +171,45 @@ Single-permutation stagewise diagnosis violates the symmetry axiom and is
 order-dependent.
 \end{proposition}
 
-The empirical form is stark. On the same incident and DAG, two valid topological
-orders give $\texttt{load\_customers} = -0.0556$ under order A and $+0.0405$
-under order B. The sign reverses: two engineers running the identical manual
-procedure on the identical incident reach opposite conclusions.
+The empirical form is stark. Enumerating \emph{every} valid topological order of
+the seven-operator pipeline over four fault scenarios,
+\textbf{8 of 28 operator/scenario pairs receive blame of both signs} depending
+only on the order chosen (Table~\ref{tab:order}). For \texttt{load\_customers}
+the assigned blame ranges from $-0.0556$ to $+0.0405$: a spread of $0.096$~AUC on
+incidents whose total magnitude is $0.03$--$0.11$~AUC. Two engineers running the
+identical manual procedure on the identical incident reach opposite conclusions
+about whether an operator helped or harmed.
+
+\begin{table}[t]
+\caption{Blame under all topological orders (7-operator pipeline)}
+\label{tab:order}
+\centering
+\begin{tabular}{lccc}
+\toprule
+Scenario & Orders & Stagewise top-blamed & Anchored \\
+\midrule
+unit change      & 6 & \texttt{agg\_transactions} (6/6) & correct \\
+predicate flip   & 6 & \texttt{filter\_active} (6/6)    & correct \\
+schema drift     & 6 & \emph{a source} (6/6, wrong)     & correct \\
+unit + predicate & 6 & \texttt{agg\_transactions} (5/6) & correct \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Worse than noisy: on the schema-drift scenario stagewise diagnosis blames an
+innocent \emph{source} operator in all six orders, never the culprit. The
+anchored value is order-independent by construction and is correct in all four
+(Fig.~\ref{fig:order}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{order_dependence.pdf}
+\caption{Range of blame stagewise diagnosis assigns to each operator across all
+six topological orders of the unit-change scenario. Bars crossing zero change
+sign with the order alone. The anchored value is a single point regardless of
+order.}
+\label{fig:order}
+\end{figure}
 
 \section{The Incident-Anchored Shapley Value}\label{sec:anchored}
 
@@ -258,11 +294,43 @@ natural churn and every downstream node's output changes whether or not it is to
 blame. This is what makes per-node monitoring fail, and it is what breaks the
 plain Shapley value.
 
-\textbf{Faults.} Five types with monotone severity ladders (29 configurations):
-unit change, schema drift, filter-predicate flip, MNAR null spike, biased join
+\textbf{Real pipeline.} Fig.~\ref{fig:pipeline} shows the nine-operator NYC taxi
+pipeline used in Sec.~\ref{sec:real}, with the two operators carrying injected
+faults highlighted. CULPA is not told which they are.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{pipeline_taxi.pdf}
+\caption{The nine-operator NYC yellow taxi pipeline. Sources (left) are
+exogenous---their state differs because the world moved between the two runs, not
+because the pipeline did---so they form the default anchor set. The two
+highlighted operators carry the injected faults of Fig.~\ref{fig:attribution}.}
+\label{fig:pipeline}
+\end{figure*}
+
+\textbf{Faults.} Five types with severity ladders (29 configurations): unit
+change, schema drift, filter-predicate flip, MNAR null spike, biased join
 fan-out. Two \emph{benign controls}---uniform join fan-out (35\% duplicate keys)
 and MCAR nullness (55\% of rows dropped)---violate data-quality constraints
 loudly while causing no model damage.
+
+Fig.~\ref{fig:severity} plots what each fault actually costs as severity rises,
+and it is why the evaluation reports exclusions. Several configurations sit below
+any measurable effect, and one ladder is not even monotone: for schema drift
+\emph{which} column is dropped matters more than how many, so losing
+\texttt{tenure} costs an order of magnitude more than losing
+\texttt{total\_amount}. An injected fault is a hypothesis about damage and has to
+be checked before attribution is scored against it.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{severity_ladder.pdf}
+\caption{Damage each fault causes in isolation, by severity level. Below the
+dashed threshold there is no degradation to attribute and no culprit to find.
+Schema drift is non-monotone: the identity of the dropped column dominates its
+count.}
+\label{fig:severity}
+\end{figure}
 
 \textbf{Baselines.} Per-node distributional drift, single-permutation stagewise
 swap (current practice), and leave-one-out.
@@ -320,19 +388,73 @@ removes benign drift by construction.
 \subsection{Anchored Value versus Leave-One-Out}
 
 On synthetic data the two rank identically---15/15 agreement on p@1. They differ
-in what the numbers mean. The anchored value's deviation
-$|\sum\phi - (v(V)-v(B))|$ has maximum $2.78\times10^{-17}$. Leave-one-out's
-deviation $|\sum\phi - v(V)|$ reaches $0.246$~AUC with mean $0.096$---larger than
-most of the incidents being diagnosed. It double-counts interacting faults, and
-in one scenario reported that an operator \emph{helped} by $+0.04$ when its true
+in what the numbers mean (Table~\ref{tab:efficiency}). Leave-one-out's
+attributions miss the observed degradation by up to $0.246$~AUC, larger than most
+of the incidents being diagnosed: it double-counts interacting faults, and in one
+scenario reported that an operator \emph{helped} by $+0.04$ when its true
 anchored contribution was $+0.005$.
+
+\begin{table}[t]
+\caption{Only the anchored value decomposes the degradation}
+\label{tab:efficiency}
+\centering
+\begin{tabular}{lcc}
+\toprule
+ & Max deviation & Mean \\
+\midrule
+Anchored, $|\sum\phi - (v(V)-v(B))|$ & $\mathbf{2.78\times10^{-17}}$ & --- \\
+Leave-one-out, $|\sum\phi - v(V)|$   & $2.46\times10^{-1}$ & $9.6\times10^{-2}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{A Worked Incident}
+
+Fig.~\ref{fig:attribution} shows the tool's output on a compound incident in the
+real taxi pipeline of Fig.~\ref{fig:pipeline}: a filter predicate silently flips
+and, independently, three feature columns vanish after an upstream rename. The
+run loses $0.0379$~AUC. Anchoring the two sources removes the benign
+weekday/weekend drift, leaving $0.0316$ to attribute, which the anchored value
+splits $-0.0171$ to \texttt{filter\_valid} and $-0.0145$ to \texttt{encode} with
+a residual of $2\times10^{-17}$. The remaining seven operators receive exactly
+zero, having been eliminated by output-hash pruning without a single model fit.
+
+That split is the operational point. A method that only ranks says
+\texttt{filter\_valid} is worse; the decomposition says fixing it alone recovers
+just over half the loss, which is what decides whether one repair is enough.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{attribution.pdf}
+\caption{Blame assigned on a compound incident in the taxi pipeline. Both
+culprits are identified and the attributions sum to the degradation being
+explained.}
+\label{fig:attribution}
+\end{figure}
 
 \subsection{Benign Controls}
 
-Uniform join fan-out ($\Delta = +0.0001$, $\max|\phi| = 0.0078$) and MCAR
-nullness ($\Delta = +0.0006$, $\max|\phi| = 0.0085$) fire every data-quality
-constraint. Neither damages the model, and the method assigns near-zero blame to
-both. \textbf{Not every data-quality violation is an incident.}
+Table~\ref{tab:benign} contrasts the benign controls with a genuinely harmful
+fault. Uniform fan-out and MCAR nullness fire every data-quality constraint a
+monitor has---35\% duplicate keys, 55\% of rows dropped---and cost nothing. The
+method assigns them near-zero blame.
+\textbf{Not every data-quality violation is an incident}, and a constraint
+checker cannot tell the two apart because it never looks at the model.
+
+\begin{table}[t]
+\caption{Constraint violation is not model damage}
+\label{tab:benign}
+\centering
+\begin{tabular}{lccc}
+\toprule
+Injected fault & Constraint & $\Delta$ (AUC) & $\max|\phi|$ \\
+\midrule
+Uniform join fan-out, 35\% & fires & $+0.0001$ & 0.0078 \\
+MCAR nullness, 55\% rows   & fires & $+0.0006$ & 0.0085 \\
+Silent unit change         & silent & $-0.1149$ & 0.0996 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Real Data: NYC Yellow Taxi}\label{sec:real}
 
@@ -414,12 +536,24 @@ $n$ & $2^n$ & Fits & Cache hit & $|F|$ & MC time \\
 \end{tabular}
 \end{table}
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{cost_scaling.pdf}
+\caption{(a) The coalition lattice grows as $2^n$ while the number of model fits
+stays flat. The step at $n=15$ is an artifact of the method, not the workload:
+exact Shapley is computed up to $n=14$ and evaluates more coalitions than the
+sampled estimator used beyond it. (b) The active frontier grows linearly and far
+below $|V|$, which is what the flat fit count actually reflects.}
+\label{fig:cost}
+\end{figure}
+
 \textbf{How to read this.} The headline ratio is real but is \emph{not} a
-function of $n$. Only three distinct sink states exist in this workload, because
-every other operator is state-insensitive and its flip is caught by the output
-hash before any model is fit. Cost tracks $|F|$, not $|V|$. That identifies its
-own failure mode: the reduction collapses when a change touches many operators
-simultaneously---a shared library upgrade, a global config change, a backfill.
+function of $n$ (Fig.~\ref{fig:cost}). Only three distinct sink states exist in
+this workload, because every other operator is state-insensitive and its flip is
+caught by the output hash before any model is fit. Cost tracks $|F|$, not $|V|$.
+That identifies its own failure mode: the reduction collapses when a change
+touches many operators simultaneously---a shared library upgrade, a global config
+change, a backfill.
 
 \section{Related Work}
 

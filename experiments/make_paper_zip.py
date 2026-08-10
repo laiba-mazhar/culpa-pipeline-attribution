@@ -20,12 +20,21 @@ ROOT = Path(__file__).resolve().parents[1]
 PAPER = ROOT / "paper"
 ZIP_NAME = "culpa-paper-ieee.zip"
 
+FIGURES = [
+    "main_result.pdf",
+    "pipeline_taxi.pdf",
+    "attribution.pdf",
+    "order_dependence.pdf",
+    "severity_ladder.pdf",
+    "cost_scaling.pdf",
+]
+
 # Flat archive: name in zip -> source path.
 CONTENTS = {
     "paper.tex": PAPER / "paper.tex",
-    "main_result.pdf": PAPER / "main_result.pdf",
     "README.md": PAPER / "README.md",
     "IEEEtran.cls": PAPER / "IEEEtran.cls",
+    **{f: PAPER / f for f in FIGURES},
 }
 
 

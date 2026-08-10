@@ -1,0 +1,84 @@
+====================================================================================
+SCENARIO unit_change   culprits=['agg_transactions']
+6 distinct topological orders enumerated
+------------------------------------------------------------------------------------
+          operator  stagewise min        max    spread  sign flips?   anchored
+  agg_transactions        -0.1147    -0.0483    0.0664            -    -0.1147
+   clean_customers         0.0000     0.0000    0.0000            -     0.0000
+   encode_features         0.0000     0.0000    0.0000            -     0.0000
+     filter_active         0.0000     0.0000    0.0000            -     0.0000
+     join_features         0.0000     0.0000    0.0000            -     0.0000
+    load_customers        -0.0556     0.0405    0.0961          YES     0.0000
+ load_transactions        -0.0407     0.0554    0.0961          YES     0.0000
+
+  which operator stagewise blames most, by order:
+      agg_transactions      6/6 orders   (correct)
+  anchored value blames: agg_transactions  (correct), and does not depend on order
+
+====================================================================================
+SCENARIO predicate_flip   culprits=['filter_active']
+6 distinct topological orders enumerated
+------------------------------------------------------------------------------------
+          operator  stagewise min        max    spread  sign flips?   anchored
+  agg_transactions         0.0000     0.0000    0.0000            -     0.0000
+   clean_customers         0.0000     0.0000    0.0000            -     0.0000
+   encode_features         0.0000     0.0000    0.0000            -     0.0000
+     filter_active        -0.0168    -0.0168    0.0000            -    -0.0168
+     join_features         0.0000     0.0000    0.0000            -     0.0000
+    load_customers        -0.0556     0.0405    0.0961          YES     0.0000
+ load_transactions        -0.0407     0.0554    0.0961          YES     0.0000
+
+  which operator stagewise blames most, by order:
+        load_customers      3/6 orders   (WRONG)
+     load_transactions      3/6 orders   (WRONG)
+  anchored value blames: filter_active  (correct), and does not depend on order
+
+====================================================================================
+SCENARIO schema_drift   culprits=['encode_features']
+6 distinct topological orders enumerated
+------------------------------------------------------------------------------------
+          operator  stagewise min        max    spread  sign flips?   anchored
+  agg_transactions         0.0000     0.0000    0.0000            -     0.0000
+   clean_customers         0.0000     0.0000    0.0000            -     0.0000
+   encode_features        -0.0303    -0.0303    0.0000            -    -0.0303
+     filter_active         0.0000     0.0000    0.0000            -     0.0000
+     join_features         0.0000     0.0000    0.0000            -     0.0000
+    load_customers        -0.0556     0.0405    0.0961          YES     0.0000
+ load_transactions        -0.0407     0.0554    0.0961          YES     0.0000
+
+  which operator stagewise blames most, by order:
+        load_customers      3/6 orders   (WRONG)
+     load_transactions      3/6 orders   (WRONG)
+  anchored value blames: encode_features  (correct), and does not depend on order
+
+====================================================================================
+SCENARIO unit_change+predicate_flip   culprits=['agg_transactions', 'filter_active']
+6 distinct topological orders enumerated
+------------------------------------------------------------------------------------
+          operator  stagewise min        max    spread  sign flips?   anchored
+  agg_transactions        -0.1147    -0.0483    0.0664            -    -0.1630
+   clean_customers         0.0000     0.0000    0.0000            -     0.0000
+   encode_features         0.0000     0.0000    0.0000            -     0.0000
+     filter_active        -0.1135    -0.1135    0.0000            -    -0.0651
+     join_features         0.0000     0.0000    0.0000            -     0.0000
+    load_customers        -0.0556     0.0405    0.0961          YES     0.0000
+ load_transactions        -0.0407     0.0554    0.0961          YES     0.0000
+
+  which operator stagewise blames most, by order:
+      agg_transactions      5/6 orders   (correct)
+         filter_active      1/6 orders   (correct)
+  anchored value blames: agg_transactions  (correct), and does not depend on order
+
+====================================================================================
+8 of 28 operator/scenario pairs receive blame of BOTH signs
+depending only on the topological order chosen:
+                   unit_change / load_customers     -0.0556 .. +0.0405
+                   unit_change / load_transactions  -0.0407 .. +0.0554
+                predicate_flip / load_customers     -0.0556 .. +0.0405
+                predicate_flip / load_transactions  -0.0407 .. +0.0554
+                  schema_drift / load_customers     -0.0556 .. +0.0405
+                  schema_drift / load_transactions  -0.0407 .. +0.0554
+    unit_change+predicate_flip / load_customers     -0.0556 .. +0.0405
+    unit_change+predicate_flip / load_transactions  -0.0407 .. +0.0554
+
+wrote C:\Users\laiba\Documents\CULPA\results\order_dependence.csv
