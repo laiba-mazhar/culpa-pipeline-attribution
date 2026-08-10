@@ -1,0 +1,259 @@
+﻿probe set: 3977 rows, 0.355 positive rate
+
+==============================================================================
+SCENARIO unit_change   culprits=['agg_transactions']
+------------------------------------------------------------------------------
+observed degradation  v(V) = -0.1149 AUC
+sum of Shapley values      = -0.1149   (efficiency gap 2.78e-17)
+active frontier (3/7): ['agg_transactions', 'load_customers', 'load_transactions']
+cost: 128 coalitions -> 8 model fits, 8 distinct sinks, operator cache hit rate 93.4%, 0.4s
+distinct topological orders enumerated: 6
+
+  shapley (exact)  agg_transactions=-0.0996  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0201  load_transactions=+0.0048
+  shapley (MC,60)  agg_transactions=-0.1048  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0197  load_transactions=+0.0096   max err 0.0052
+  leave-one-out    agg_transactions=-0.1147  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0259  load_transactions=+0.0090
+  stagewise ord.A  agg_transactions=-0.1147  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0556  load_transactions=+0.0554
+  stagewise ord.B  agg_transactions=-0.1147  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=+0.0405  load_transactions=-0.0407
+  per-node drift   agg_transactions=-0.9256  clean_customers=-0.0167  encode_features=-0.3531  filter_active=-0.4740  join_features=-0.4638  load_customers=-0.0167  load_transactions=-0.0200
+
+  shapley      top-blame=agg_transactions   p@1=1  MRR=1.00  mass=0.83
+  shapley_mc   top-blame=agg_transactions   p@1=1  MRR=1.00  mass=0.84
+  loo          top-blame=agg_transactions   p@1=1  MRR=1.00  mass=0.82
+  stagewise_A  top-blame=agg_transactions   p@1=1  MRR=1.00  mass=0.67
+  stagewise_B  top-blame=agg_transactions   p@1=1  MRR=1.00  mass=0.74
+  drift        top-blame=agg_transactions   p@1=1  MRR=1.00  mass=0.41
+
+==============================================================================
+SCENARIO schema_drift   culprits=['encode_features']
+------------------------------------------------------------------------------
+observed degradation  v(V) = -0.0305 AUC
+sum of Shapley values      = -0.0305   (efficiency gap 2.08e-17)
+active frontier (3/7): ['encode_features', 'load_customers', 'load_transactions']
+cost: 128 coalitions -> 8 model fits, 8 distinct sinks, operator cache hit rate 96.0%, 0.3s
+distinct topological orders enumerated: 6
+
+  shapley (exact)  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=-0.0321  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0082  load_transactions=+0.0098
+  shapley (MC,60)  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=-0.0317  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0130  load_transactions=+0.0142   max err 0.0048
+  leave-one-out    agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=-0.0303  filter_active=+0.0000  join_features=+0.0000  load_customers=+0.0427  load_transactions=+0.0638
+  stagewise ord.A  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=-0.0303  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0556  load_transactions=+0.0554
+  stagewise ord.B  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=-0.0303  filter_active=+0.0000  join_features=+0.0000  load_customers=+0.0405  load_transactions=-0.0407
+  per-node drift   agg_transactions=-0.0194  clean_customers=-0.0167  encode_features=-1.0234  filter_active=-0.0209  join_features=-0.0186  load_customers=-0.0167  load_transactions=-0.0200
+
+  shapley      top-blame=encode_features    p@1=1  MRR=1.00  mass=0.80
+  shapley_mc   top-blame=encode_features    p@1=1  MRR=1.00  mass=0.71
+  loo          top-blame=encode_features    p@1=1  MRR=1.00  mass=1.00
+  stagewise_A  top-blame=load_customers     p@1=0  MRR=0.50  mass=0.35
+  stagewise_B  top-blame=load_transactions  p@1=0  MRR=0.50  mass=0.43
+  drift        top-blame=encode_features    p@1=1  MRR=1.00  mass=0.90
+
+==============================================================================
+SCENARIO predicate_flip   culprits=['filter_active']
+------------------------------------------------------------------------------
+observed degradation  v(V) = -0.0170 AUC
+sum of Shapley values      = -0.0170   (efficiency gap 6.94e-18)
+active frontier (3/7): ['filter_active', 'load_customers', 'load_transactions']
+cost: 128 coalitions -> 8 model fits, 8 distinct sinks, operator cache hit rate 95.1%, 0.2s
+distinct topological orders enumerated: 6
+
+  shapley (exact)  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=-0.0153  join_features=+0.0000  load_customers=-0.0046  load_transactions=+0.0028
+  shapley (MC,60)  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=-0.0156  join_features=+0.0000  load_customers=-0.0091  load_transactions=+0.0077   max err 0.0049
+  leave-one-out    agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=-0.0168  join_features=+0.0000  load_customers=+0.0399  load_transactions=+0.0399
+  stagewise ord.A  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=-0.0168  join_features=+0.0000  load_customers=-0.0556  load_transactions=+0.0554
+  stagewise ord.B  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=-0.0168  join_features=+0.0000  load_customers=+0.0405  load_transactions=-0.0407
+  per-node drift   agg_transactions=-0.0194  clean_customers=-0.0167  encode_features=-0.8051  filter_active=-0.8670  join_features=-0.0186  load_customers=-0.0167  load_transactions=-0.0200
+
+  shapley      top-blame=filter_active      p@1=1  MRR=1.00  mass=0.77
+  shapley_mc   top-blame=filter_active      p@1=1  MRR=1.00  mass=0.63
+  loo          top-blame=filter_active      p@1=1  MRR=1.00  mass=1.00
+  stagewise_A  top-blame=load_customers     p@1=0  MRR=0.50  mass=0.23
+  stagewise_B  top-blame=load_transactions  p@1=0  MRR=0.50  mass=0.29
+  drift        top-blame=filter_active      p@1=1  MRR=1.00  mass=0.49
+
+==============================================================================
+SCENARIO join_fanout_biased   culprits=['join_features']
+------------------------------------------------------------------------------
+observed degradation  v(V) = -0.0016 AUC
+sum of Shapley values      = -0.0016   (efficiency gap 3.64e-17)
+active frontier (3/7): ['join_features', 'load_customers', 'load_transactions']
+cost: 128 coalitions -> 8 model fits, 8 distinct sinks, operator cache hit rate 94.2%, 0.3s
+distinct topological orders enumerated: 6
+
+  shapley (exact)  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=-0.0022  load_customers=-0.0080  load_transactions=+0.0086
+  shapley (MC,60)  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=-0.0021  load_customers=-0.0128  load_transactions=+0.0133   max err 0.0048
+  leave-one-out    agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=-0.0014  load_customers=+0.0388  load_transactions=+0.0571
+  stagewise ord.A  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=-0.0014  load_customers=-0.0556  load_transactions=+0.0554
+  stagewise ord.B  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=-0.0014  load_customers=+0.0405  load_transactions=-0.0407
+  per-node drift   agg_transactions=-0.0194  clean_customers=-0.0167  encode_features=-1.3105  filter_active=-1.3670  join_features=-1.3577  load_customers=-0.0167  load_transactions=-0.0200
+
+  shapley      top-blame=load_customers     p@1=0  MRR=0.50  mass=0.21
+  shapley_mc   top-blame=load_customers     p@1=0  MRR=0.50  mass=0.14
+  loo          top-blame=join_features      p@1=1  MRR=1.00  mass=1.00
+  stagewise_A  top-blame=load_customers     p@1=0  MRR=0.50  mass=0.02
+  stagewise_B  top-blame=load_transactions  p@1=0  MRR=0.50  mass=0.03
+  drift        top-blame=filter_active      p@1=0  MRR=0.50  mass=0.33
+
+==============================================================================
+SCENARIO null_spike_mnar   culprits=['clean_customers']
+------------------------------------------------------------------------------
+observed degradation  v(V) = -0.0028 AUC
+sum of Shapley values      = -0.0028   (efficiency gap 2.08e-17)
+active frontier (3/7): ['clean_customers', 'load_customers', 'load_transactions']
+cost: 128 coalitions -> 8 model fits, 8 distinct sinks, operator cache hit rate 93.4%, 0.3s
+distinct topological orders enumerated: 6
+
+  shapley (exact)  agg_transactions=+0.0000  clean_customers=-0.0037  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0083  load_transactions=+0.0092
+  shapley (MC,60)  agg_transactions=+0.0000  clean_customers=-0.0036  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0133  load_transactions=+0.0141   max err 0.0050
+  leave-one-out    agg_transactions=+0.0000  clean_customers=-0.0026  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=+0.0411  load_transactions=+0.0612
+  stagewise ord.A  agg_transactions=+0.0000  clean_customers=-0.0085  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0556  load_transactions=+0.0612
+  stagewise ord.B  agg_transactions=+0.0000  clean_customers=-0.0026  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=+0.0405  load_transactions=-0.0407
+  per-node drift   agg_transactions=-0.0194  clean_customers=-0.6085  encode_features=-0.5347  filter_active=-0.5561  join_features=-0.5551  load_customers=-0.0167  load_transactions=-0.0200
+
+  shapley      top-blame=load_customers     p@1=0  MRR=0.50  mass=0.31
+  shapley_mc   top-blame=load_customers     p@1=0  MRR=0.50  mass=0.21
+  loo          top-blame=clean_customers    p@1=1  MRR=1.00  mass=1.00
+  stagewise_A  top-blame=load_customers     p@1=0  MRR=0.50  mass=0.13
+  stagewise_B  top-blame=load_transactions  p@1=0  MRR=0.50  mass=0.06
+  drift        top-blame=clean_customers    p@1=1  MRR=1.00  mass=0.26
+
+==============================================================================
+SCENARIO join_fanout_uniform   culprits=['join_features']
+------------------------------------------------------------------------------
+observed degradation  v(V) = +0.0001 AUC
+sum of Shapley values      = +0.0001   (efficiency gap 1.39e-17)
+active frontier (3/7): ['join_features', 'load_customers', 'load_transactions']
+cost: 128 coalitions -> 8 model fits, 8 distinct sinks, operator cache hit rate 94.2%, 0.3s
+distinct topological orders enumerated: 6
+
+  shapley (exact)  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=-0.0005  load_customers=-0.0072  load_transactions=+0.0078
+  shapley (MC,60)  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=-0.0005  load_customers=-0.0120  load_transactions=+0.0126   max err 0.0049
+  leave-one-out    agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0003  load_customers=+0.0420  load_transactions=+0.0571
+  stagewise ord.A  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0003  load_customers=-0.0556  load_transactions=+0.0554
+  stagewise ord.B  agg_transactions=+0.0000  clean_customers=+0.0000  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0003  load_customers=+0.0405  load_transactions=-0.0407
+  per-node drift   agg_transactions=-0.0194  clean_customers=-0.0167  encode_features=-0.3763  filter_active=-0.3748  join_features=-0.3680  load_customers=-0.0167  load_transactions=-0.0200
+
+  shapley      top-blame=load_customers     p@1=0  MRR=0.50  mass=0.06
+  shapley_mc   top-blame=load_customers     p@1=0  MRR=0.50  mass=0.04
+  loo          top-blame=agg_transactions   p@1=0  MRR=0.20  mass=0.00
+  stagewise_A  top-blame=load_customers     p@1=0  MRR=0.17  mass=0.00
+  stagewise_B  top-blame=load_transactions  p@1=0  MRR=0.17  mass=0.00
+  drift        top-blame=encode_features    p@1=0  MRR=0.33  mass=0.31
+
+==============================================================================
+SCENARIO null_spike_mcar   culprits=['clean_customers']
+------------------------------------------------------------------------------
+observed degradation  v(V) = +0.0006 AUC
+sum of Shapley values      = +0.0006   (efficiency gap 3.47e-18)
+active frontier (3/7): ['clean_customers', 'load_customers', 'load_transactions']
+cost: 128 coalitions -> 8 model fits, 8 distinct sinks, operator cache hit rate 93.4%, 0.2s
+distinct topological orders enumerated: 6
+
+  shapley (exact)  agg_transactions=+0.0000  clean_customers=-0.0010  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0070  load_transactions=+0.0085
+  shapley (MC,60)  agg_transactions=+0.0000  clean_customers=-0.0009  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0119  load_transactions=+0.0134   max err 0.0050
+  leave-one-out    agg_transactions=+0.0000  clean_customers=+0.0008  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=+0.0437  load_transactions=+0.0598
+  stagewise ord.A  agg_transactions=+0.0000  clean_customers=-0.0036  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0556  load_transactions=+0.0598
+  stagewise ord.B  agg_transactions=+0.0000  clean_customers=+0.0008  encode_features=+0.0000  filter_active=+0.0000  join_features=+0.0000  load_customers=+0.0405  load_transactions=-0.0407
+  per-node drift   agg_transactions=-0.0194  clean_customers=-0.5743  encode_features=-0.5817  filter_active=-0.5828  join_features=-0.5816  load_customers=-0.0167  load_transactions=-0.0200
+
+  shapley      top-blame=load_customers     p@1=0  MRR=0.50  mass=0.13
+  shapley_mc   top-blame=load_customers     p@1=0  MRR=0.50  mass=0.07
+  loo          top-blame=agg_transactions   p@1=0  MRR=0.20  mass=0.00
+  stagewise_A  top-blame=load_customers     p@1=0  MRR=0.50  mass=0.06
+  stagewise_B  top-blame=load_transactions  p@1=0  MRR=0.17  mass=0.00
+  drift        top-blame=filter_active      p@1=0  MRR=0.25  mass=0.24
+
+==============================================================================
+SCENARIO unit_change+predicate_flip   culprits=['agg_transactions', 'filter_active']
+------------------------------------------------------------------------------
+observed degradation  v(V) = -0.2283 AUC
+sum of Shapley values      = -0.2283   (efficiency gap 5.55e-17)
+active frontier (4/7): ['agg_transactions', 'filter_active', 'load_customers', 'load_transactions']
+cost: 128 coalitions -> 16 model fits, 16 distinct sinks, operator cache hit rate 91.6%, 0.3s
+distinct topological orders enumerated: 6
+
+  shapley (exact)  agg_transactions=-0.1204  clean_customers=+0.0000  encode_features=+0.0000  filter_active=-0.0360  join_features=+0.0000  load_customers=-0.0346  load_transactions=-0.0373
+  shapley (MC,60)  agg_transactions=-0.1309  clean_customers=+0.0000  encode_features=+0.0000  filter_active=-0.0357  join_features=+0.0000  load_customers=-0.0327  load_transactions=-0.0290   max err 0.0106
+  leave-one-out    agg_transactions=-0.2113  clean_customers=+0.0000  encode_features=+0.0000  filter_active=-0.1135  join_features=+0.0000  load_customers=-0.0874  load_transactions=-0.1279
+  stagewise ord.A  agg_transactions=-0.1147  clean_customers=+0.0000  encode_features=+0.0000  filter_active=-0.1135  join_features=+0.0000  load_customers=-0.0556  load_transactions=+0.0554
+  stagewise ord.B  agg_transactions=-0.1147  clean_customers=+0.0000  encode_features=+0.0000  filter_active=-0.1135  join_features=+0.0000  load_customers=+0.0405  load_transactions=-0.0407
+  per-node drift   agg_transactions=-0.9256  clean_customers=-0.0167  encode_features=-1.0733  filter_active=-1.2358  join_features=-0.4638  load_customers=-0.0167  load_transactions=-0.0200
+
+  shapley      top-blame=agg_transactions   p@1=1  MRR=1.00  mass=0.68
+  shapley_mc   top-blame=agg_transactions   p@1=1  MRR=1.00  mass=0.73
+  loo          top-blame=agg_transactions   p@1=1  MRR=1.00  mass=0.60
+  stagewise_A  top-blame=agg_transactions   p@1=1  MRR=1.00  mass=0.80
+  stagewise_B  top-blame=agg_transactions   p@1=1  MRR=1.00  mass=0.85
+  drift        top-blame=filter_active      p@1=1  MRR=1.00  mass=0.58
+
+==============================================================================
+SCENARIO null_spike_mnar+schema_drift   culprits=['clean_customers', 'encode_features']
+------------------------------------------------------------------------------
+observed degradation  v(V) = -0.0320 AUC
+sum of Shapley values      = -0.0320   (efficiency gap 1.39e-17)
+active frontier (4/7): ['clean_customers', 'encode_features', 'load_customers', 'load_transactions']
+cost: 128 coalitions -> 16 model fits, 16 distinct sinks, operator cache hit rate 93.4%, 0.3s
+distinct topological orders enumerated: 6
+
+  shapley (exact)  agg_transactions=+0.0000  clean_customers=-0.0039  encode_features=-0.0323  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0088  load_transactions=+0.0130
+  shapley (MC,60)  agg_transactions=+0.0000  clean_customers=-0.0035  encode_features=-0.0316  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0140  load_transactions=+0.0171   max err 0.0052
+  leave-one-out    agg_transactions=+0.0000  clean_customers=-0.0015  encode_features=-0.0291  filter_active=+0.0000  join_features=+0.0000  load_customers=+0.0461  load_transactions=+0.0761
+  stagewise ord.A  agg_transactions=+0.0000  clean_customers=-0.0085  encode_features=-0.0291  filter_active=+0.0000  join_features=+0.0000  load_customers=-0.0556  load_transactions=+0.0612
+  stagewise ord.B  agg_transactions=+0.0000  clean_customers=-0.0026  encode_features=-0.0291  filter_active=+0.0000  join_features=+0.0000  load_customers=+0.0405  load_transactions=-0.0407
+  per-node drift   agg_transactions=-0.0194  clean_customers=-0.6085  encode_features=-1.4842  filter_active=-0.5561  join_features=-0.5551  load_customers=-0.0167  load_transactions=-0.0200
+
+  shapley      top-blame=encode_features    p@1=1  MRR=1.00  mass=0.80
+  shapley_mc   top-blame=encode_features    p@1=1  MRR=1.00  mass=0.71
+  loo          top-blame=encode_features    p@1=1  MRR=1.00  mass=1.00
+  stagewise_A  top-blame=load_customers     p@1=0  MRR=0.50  mass=0.40
+  stagewise_B  top-blame=load_transactions  p@1=0  MRR=0.50  mass=0.44
+  drift        top-blame=encode_features    p@1=1  MRR=1.00  mass=0.64
+
+==============================================================================
+SCENARIO starve_rows_a+starve_rows_b   culprits=['clean_customers', 'filter_active']
+------------------------------------------------------------------------------
+observed degradation  v(V) = -0.0955 AUC
+sum of Shapley values      = -0.0955   (efficiency gap 2.78e-17)
+active frontier (4/7): ['clean_customers', 'filter_active', 'load_customers', 'load_transactions']
+cost: 128 coalitions -> 16 model fits, 16 distinct sinks, operator cache hit rate 91.6%, 0.3s
+distinct topological orders enumerated: 6
+
+  shapley (exact)  agg_transactions=+0.0000  clean_customers=+0.0048  encode_features=+0.0000  filter_active=-0.0559  join_features=+0.0000  load_customers=-0.0072  load_transactions=-0.0373
+  shapley (MC,60)  agg_transactions=+0.0000  clean_customers=+0.0060  encode_features=+0.0000  filter_active=-0.0641  join_features=+0.0000  load_customers=-0.0099  load_transactions=-0.0275   max err 0.0097
+  leave-one-out    agg_transactions=+0.0000  clean_customers=+0.0399  encode_features=+0.0000  filter_active=-0.0954  join_features=+0.0000  load_customers=+0.0087  load_transactions=-0.0741
+  stagewise ord.A  agg_transactions=+0.0000  clean_customers=-0.0033  encode_features=+0.0000  filter_active=-0.0954  join_features=+0.0000  load_customers=-0.0556  load_transactions=+0.0588
+  stagewise ord.B  agg_transactions=+0.0000  clean_customers=+0.0001  encode_features=+0.0000  filter_active=-0.0954  join_features=+0.0000  load_customers=+0.0405  load_transactions=-0.0407
+  per-node drift   agg_transactions=-0.0194  clean_customers=-0.8128  encode_features=-1.2906  filter_active=-1.4075  join_features=-0.8183  load_customers=-0.0167  load_transactions=-0.0200
+
+  shapley      top-blame=filter_active      p@1=1  MRR=1.00  mass=0.56
+  shapley_mc   top-blame=filter_active      p@1=1  MRR=1.00  mass=0.63
+  loo          top-blame=filter_active      p@1=1  MRR=1.00  mass=0.56
+  stagewise_A  top-blame=filter_active      p@1=1  MRR=1.00  mass=0.64
+  stagewise_B  top-blame=filter_active      p@1=1  MRR=1.00  mass=0.70
+  drift        top-blame=filter_active      p@1=1  MRR=1.00  mass=0.51
+
+==============================================================================
+AGGREGATE
+
+all harmful scenarios (8 scenarios)
+method            p@1    MRR  blame mass
+shapley          0.75   0.88        0.62
+shapley_mc       0.75   0.88        0.58
+loo              1.00   1.00        0.87
+stagewise_A      0.38   0.69        0.41
+stagewise_B      0.38   0.69        0.44
+drift            0.88   0.94        0.51
+
+harmful compound only (3 scenarios)
+method            p@1    MRR  blame mass
+shapley          1.00   1.00        0.68
+shapley_mc       1.00   1.00        0.69
+loo              1.00   1.00        0.72
+stagewise_A      0.67   0.83        0.62
+stagewise_B      0.67   0.83        0.66
+drift            1.00   1.00        0.57
+
+benign scenarios -- loud constraint violations, no model damage.
+correct behaviour is |phi| ~ 0 everywhere; ranking metrics are
+meaningless here and are omitted.
+scenario                       v(V)   max|phi|
+join_fanout_uniform         +0.0001     0.0078
+null_spike_mcar             +0.0006     0.0085

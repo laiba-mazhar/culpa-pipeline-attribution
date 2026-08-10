@@ -1,0 +1,533 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverrideCommandLockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{url}
+% Resolves whether the figure sits beside paper.tex (Overleaf upload of paper/
+% alone) or in the repo's figures/ directory.
+\graphicspath{{./}{../figures/}}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{definition}{Definition}
+
+\begin{document}
+
+\title{Anchored Counterfactual Attribution of Model\\Degradation to ETL Pipeline Operators}
+
+\author{\IEEEauthorblockN{Laiba Mazhar}
+\IEEEauthorblockA{\textit{Independent Researcher}\\
+Lahore, Pakistan\\
+lm4442172@gmail.com}}
+
+\maketitle
+
+\begin{abstract}
+Production machine learning models are fed by ETL pipelines of tens to hundreds
+of operators. When model quality drops between two scheduled runs with no code
+deployed, engineers must determine which operator is responsible. Current
+practice walks the pipeline in topological order, swapping in the new run's data
+one stage at a time. We show this is the marginal-contribution vector of a single
+permutation and is therefore order-dependent: on our benchmark the \emph{sign} of
+attributed blame reverses between two valid topological orders of the same DAG.
+We formulate the problem as a cooperative game. Holding the pipeline fixed, each
+operator executes in either of two states---as in a known-good \emph{reference}
+run or as in the degraded \emph{incident} run---and a \emph{hybrid replay}
+executes the DAG under an arbitrary state assignment. The Shapley value of the
+resulting game decomposes the observed degradation exactly. Our central finding
+is negative and then constructive: the Shapley value is correct as accounting but
+poor as triage, ranking the true culprit first in only 60\% of measurable
+incidents, and failing precisely when the injected fault does less damage than
+co-occurring benign drift. Leave-one-out ablation ranks well on synthetic data
+but its attributions deviate from the observed degradation by up to $0.246$~AUC.
+We introduce the \emph{incident-anchored Shapley value}, which holds a designated
+set of exogenous operators at incident state and takes the Shapley value of the
+resulting sub-game. It recovers standard Shapley and leave-one-out as boundary
+cases, attains 100\% top-1 accuracy in every severity regime, and retains exact
+decomposition to within $3\times10^{-17}$. On real NYC taxi partitions the
+separation sharpens: comparing a Monday against a Saturday, leave-one-out
+collapses to $0.50$ while the anchored value holds at $1.00$. Output-hash pruning
+and prefix memoisation reduce $2^{33}$ hybrid replays to three model fits on a
+33-operator DAG.
+\end{abstract}
+
+\begin{IEEEkeywords}
+data pipelines, model degradation, root cause analysis, Shapley value, data-centric AI, ETL
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+A model scores $0.87$ AUC on Monday. On Tuesday the same Airflow DAG runs,
+nothing was deployed, and it scores $0.81$. Which task caused it?
+
+This is among the most common failure modes in production machine learning, and
+existing tooling addresses it poorly. Monitoring systems~\cite{deequ} report
+\emph{that} a distribution moved; in a deep DAG a single upstream change makes
+every downstream node move, so a monitor fires everywhere and ranks nothing.
+Lineage systems~\cite{openlineage} report what is upstream of what, narrowing the
+suspects to ``everything upstream.'' Pipeline debuggers---\textsc{mlinspect}
+\cite{mlinspect,mlinspectj} is the strongest---instrument a pipeline into a
+dataflow DAG and propagate annotations to detect data-distribution bugs
+\emph{within one execution}; they do not compare executions across time and do
+not assign quantitative blame.
+
+So the work is done by hand, and the manual procedure has a defect nobody has
+named: it depends on the order the engineer happens to walk the DAG in.
+
+\subsection{Contributions}
+
+\begin{enumerate}
+\item \textbf{Formulation} (Sec.~\ref{sec:game}). Temporal hybrid replay of a
+fixed pipeline over two snapshots as a cooperative game whose Shapley value
+decomposes observed degradation exactly. Verified numerically to
+$6\times10^{-17}$.
+\item \textbf{A negative result} (Sec.~\ref{sec:negative}). The Shapley value is
+the wrong estimator for triage, failing when the fault is smaller than
+co-occurring benign drift.
+\item \textbf{The anchored Shapley value} (Sec.~\ref{sec:anchored}). A
+one-parameter family spanning standard Shapley and leave-one-out, attaining
+100\% top-1 accuracy while preserving exact decomposition.
+\item \textbf{Tractability} (Sec.~\ref{sec:computing}). Output-hash pruning and
+prefix memoisation, with the collapse regime identified.
+\item \textbf{A fault-injection benchmark} over synthetic and real NYC taxi
+pipelines, with ground-truth culprits, monotone severity ladders, and
+\emph{benign controls}---faults that violate data-quality constraints loudly
+while causing no model damage.
+\item \textbf{A real-data result} (Sec.~\ref{sec:real}) showing that
+leave-one-out, indistinguishable from the anchored value on synthetic data,
+fails under real weekday/weekend drift.
+\end{enumerate}
+
+We do not have a production deployment, we have not integrated with an
+orchestrator, our real-data evaluation is one dataset and one pipeline topology,
+and the anchored estimator's axiomatic characterisation is stated but not proven.
+Section~\ref{sec:limits} is explicit about all of this.
+
+\section{Problem Statement}
+
+A pipeline is a DAG $G=(V,E)$ of operators, each computing
+$d_i = f_i(\text{inputs}, \text{params}_i)$. Two executions are given: a
+\emph{reference} run $R$ (last known-good) and an \emph{incident} run $I$
+(degraded). Between them each operator may differ in its source partition, its
+configuration, or its code. We encode all three uniformly as an operator
+\emph{state} $\sigma_i \in \{R, I\}$.
+
+A downstream model is trained on the sink dataset and evaluated on a fixed probe
+set. Writing $u$ for that utility, the observed degradation is
+$\Delta = u(V) - u(\emptyset)$.
+
+\textbf{The attribution problem.} Distribute $\Delta$ across operators such that
+the assignment identifies which operators to repair.
+
+\section{Hybrid Replay and the Degradation Game}\label{sec:game}
+
+\begin{definition}[Hybrid replay]
+For $S \subseteq V$, $\Pi(S)$ executes the DAG with every operator in $S$ in
+incident state and every operator in $V \setminus S$ in reference state:
+\begin{equation}
+d_i(S) = f_i\!\left(\{d_j(S) : (o_j,o_i)\in E\},\ \text{params}_i^{\sigma_i(S)}\right)
+\end{equation}
+where $\sigma_i(S) = I$ if $o_i \in S$ and $R$ otherwise.
+\end{definition}
+
+$\Pi(\emptyset)$ reproduces the good run, $\Pi(V)$ the bad one, and the $2^n-2$
+hybrids between them interpolate.
+
+\begin{definition}[Degradation game]
+With $u(S)$ the model utility on $\Pi(S)$'s output, $v(S) = u(S) - u(\emptyset)$.
+\end{definition}
+
+Then $v(\emptyset)=0$ and $v(V)=\Delta$. The probe set is held fixed across every
+coalition; otherwise $u(S)$ compares different things and every property below is
+vacuous. The Shapley value
+\begin{equation}
+\phi_i = \sum_{S \subseteq V\setminus\{i\}} \frac{|S|!\,(n-|S|-1)!}{n!}
+         \left[v(S\cup\{i\}) - v(S)\right]
+\label{eq:shapley}
+\end{equation}
+satisfies \emph{efficiency}: $\sum_i \phi_i = \Delta$. The degradation is
+\emph{decomposed}, not merely scored. No baseline we are aware of has this
+property.
+
+\subsection{Current Practice is a Single Permutation}
+
+Walking the DAG in topological order and swapping stages in one at a time
+produces, for order $\pi$, the vector $m_i^\pi = v(S_\pi(i)\cup\{i\}) - v(S_\pi(i))$
+where $S_\pi(i)$ precedes $i$. This is the marginal-contribution vector of
+\emph{one} permutation; \eqref{eq:shapley} averages over all $n!$.
+
+\begin{proposition}
+Single-permutation stagewise diagnosis violates the symmetry axiom and is
+order-dependent.
+\end{proposition}
+
+The empirical form is stark. On the same incident and DAG, two valid topological
+orders give $\texttt{load\_customers} = -0.0556$ under order A and $+0.0405$
+under order B. The sign reverses: two engineers running the identical manual
+procedure on the identical incident reach opposite conclusions.
+
+\section{The Incident-Anchored Shapley Value}\label{sec:anchored}
+
+Section~\ref{sec:negative} shows the Shapley value ranks culprits worse than
+naive leave-one-out. The reason is a conditioning difference. Leave-one-out
+evaluates $v(V)-v(V\setminus\{i\})$, the marginal effect \emph{at the actual
+incident configuration}, where benign drift is held fixed and cancels. Shapley
+averages over all $2^n$ configurations, including many where the benign drift has
+not happened, so drift receives a real, nonzero share. Both are right about
+different questions, and the space between them is empty in the literature.
+
+\begin{definition}[Incident-anchored Shapley value]
+For an anchor set $B \subseteq V$, let $v_B(T) = v(T \cup B) - v(B)$ be the
+sub-game on $V\setminus B$. The anchored value $\phi^B$ is the Shapley value of
+$v_B$, with $\phi_i^B = 0$ for $i \in B$ and, writing $m = |V \setminus B|$,
+\begin{equation}
+\phi_i^B \!=\!\! \sum_{S \subseteq V\setminus(B\cup\{i\})}\!\!\!
+  \frac{|S|!\,(m-|S|-1)!}{m!}
+  \left[v(S\cup B\cup\{i\}) - v(S\cup B)\right]
+\end{equation}
+\end{definition}
+
+\begin{theorem}[Boundary cases]
+$B=\emptyset$ gives the standard Shapley value. $B = V\setminus\{i\}$ gives
+$\phi_i^B = v(V) - v(V\setminus\{i\})$, the leave-one-out value of $i$.
+\end{theorem}
+
+Both are verified as assertions to machine precision before any result is
+reported.
+
+\begin{theorem}[Anchored efficiency]
+$\sum_{i \notin B} \phi_i^B = v(V) - v(B)$.
+\end{theorem}
+
+The anchored values decompose exactly the part of the degradation not already
+explained by the anchor. Measured maximum deviation across all 29 synthetic
+configurations: $2.78\times10^{-17}$.
+
+\subsection{Choosing the Anchor}
+
+The principled default anchors the \emph{exogenous} operators---sources, with no
+parents. Their state differs because the world moved, not because the pipeline
+did. One cannot repair the fact that Tuesday's data is not Monday's, so charging
+blame to it is accurate accounting and useless triage. This is a modelling
+decision and we present it as one.
+
+\section{Computing It}\label{sec:computing}
+
+Each $v(S)$ costs a pipeline replay plus a model fit; $2^n$ of them is hopeless.
+Three mechanisms make it practical.
+
+\textbf{Ancestral sufficiency.} $u(S)$ depends only on the sink, so operators
+outside $\mathrm{Anc}^*(\text{sink})$ are null players. In real Airflow DAGs most
+tasks are sensors, notifications and cleanup; this removes them for free.
+
+\textbf{Output-stability pruning.} If operator $i$'s output is byte-identical
+under both states given the same inputs, all downstream computation is identical
+and $v(S\cup\{i\}) = v(S)$. This is detectable by \emph{hashing}, with no model
+fit---one hash replaces one replay-and-retrain. The operators surviving this test
+form the \emph{active frontier} $F$.
+
+\textbf{Prefix memoisation.} Hybrid replays share large prefixes. We cache
+operator outputs on $(\text{operator}, \text{state}, \text{hash(inputs)})$ and
+utilities on the sink hash, so distinct coalitions producing an identical sink
+share a single model fit.
+
+Beyond $n \approx 14$ we use permutation sampling over the free players with the
+anchor always included.
+
+\section{Evaluation}
+
+\subsection{Setup}
+
+\textbf{Synthetic pipeline.} A seven-operator churn feature build: two sources, a
+cleaning step, an aggregation, a join, a filter, an encoder; 4000 customers per
+day. $n=7$ keeps the 128-coalition lattice brute-forceable so Monte-Carlo
+estimates can be checked against exact ground truth.
+
+\textbf{Benign drift.} Reference and incident runs read \emph{different days} of
+source data from the same distribution, so every scenario layers a real fault on
+natural churn and every downstream node's output changes whether or not it is to
+blame. This is what makes per-node monitoring fail, and it is what breaks the
+plain Shapley value.
+
+\textbf{Faults.} Five types with monotone severity ladders (29 configurations):
+unit change, schema drift, filter-predicate flip, MNAR null spike, biased join
+fan-out. Two \emph{benign controls}---uniform join fan-out (35\% duplicate keys)
+and MCAR nullness (55\% of rows dropped)---violate data-quality constraints
+loudly while causing no model damage.
+
+\textbf{Baselines.} Per-node distributional drift, single-permutation stagewise
+swap (current practice), and leave-one-out.
+
+\subsection{The Negative Result}\label{sec:negative}
+
+On the initial gate experiment (10 scenarios), leave-one-out beat the Shapley
+value, as shown in Table~\ref{tab:gate}.
+
+\begin{table}[t]
+\caption{Initial gate experiment, 8 harmful scenarios}
+\label{tab:gate}
+\centering
+\begin{tabular}{lccc}
+\toprule
+Method & p@1 & MRR & Blame mass \\
+\midrule
+Leave-one-out   & \textbf{1.00} & \textbf{1.00} & \textbf{0.87} \\
+Per-node drift  & 0.88 & 0.94 & 0.51 \\
+Shapley (exact) & 0.75 & 0.88 & 0.62 \\
+Stagewise       & 0.38 & 0.69 & 0.41 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Shapley lost exactly the two scenarios where the fault did \emph{less} damage
+than benign drift: biased join fan-out ($\Delta = -0.0016$) and MNAR null spike
+($\Delta = -0.0028$), against a per-source benign drift magnitude of $0.0556$. In
+both it ranked a source above the culprit---which, as accounting, is correct.
+This motivated the anchored value.
+
+\subsection{Accuracy Against the Fault-to-Drift Ratio}
+
+Let $r = |v(\{\text{culprit}\})| / \max_s |v(\{s\})|$ over sources $s$.
+Figure~\ref{fig:main} plots precision@1 against $r$ for both pipelines.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{main_result.pdf}
+\caption{Precision@1 by fault-to-drift ratio $r$. The anchored value is flat at
+$1.00$ in every regime. On the synthetic pipeline (a), plain Shapley degrades
+below $r=1$ while leave-one-out does not. On real NYC taxi partitions (b),
+leave-one-out collapses alongside Shapley and current practice, and the anchored
+value is the only estimator that survives.}
+\label{fig:main}
+\end{figure*}
+
+Across the 15 measurable synthetic configurations the anchored value attains
+p@1 $=1.00$, against $0.60$ for plain Shapley, $0.87$ for per-node drift and
+$0.33$ for stagewise. The predicted mechanism is confirmed: plain Shapley
+degrades to $0.20$ when the fault is small relative to benign drift and recovers
+to $1.00$ when it dominates, while the anchored value is flat because anchoring
+removes benign drift by construction.
+
+\subsection{Anchored Value versus Leave-One-Out}
+
+On synthetic data the two rank identically---15/15 agreement on p@1. They differ
+in what the numbers mean. The anchored value's deviation
+$|\sum\phi - (v(V)-v(B))|$ has maximum $2.78\times10^{-17}$. Leave-one-out's
+deviation $|\sum\phi - v(V)|$ reaches $0.246$~AUC with mean $0.096$---larger than
+most of the incidents being diagnosed. It double-counts interacting faults, and
+in one scenario reported that an operator \emph{helped} by $+0.04$ when its true
+anchored contribution was $+0.005$.
+
+\subsection{Benign Controls}
+
+Uniform join fan-out ($\Delta = +0.0001$, $\max|\phi| = 0.0078$) and MCAR
+nullness ($\Delta = +0.0006$, $\max|\phi| = 0.0085$) fire every data-quality
+constraint. Neither damages the model, and the method assigns near-zero blame to
+both. \textbf{Not every data-quality violation is an incident.}
+
+\subsection{Real Data: NYC Yellow Taxi}\label{sec:real}
+
+A nine-operator pipeline over NYC TLC yellow taxi records for January 2024: two
+sources, a validity filter, time-feature derivation, a per-zone aggregate, two
+zone joins, a stats join, and an encoder. Task: predict a generous tip
+($\text{tip}/\text{fare} > 0.20$) for credit-card trips; 60{,}000 trips per
+partition. \texttt{tip\_amount} and \texttt{total\_amount} are dropped before
+modelling---the latter includes the tip and would leak the label outright.
+
+Reference and incident runs read two different real days. Table~\ref{tab:real}
+gives two regimes.
+
+\begin{table}[t]
+\caption{Real NYC taxi, precision@1 over valid test cases}
+\label{tab:real}
+\centering
+\begin{tabular}{lcc}
+\toprule
+ & Mon 8 vs Tue 9 & Mon 8 vs Sat 13 \\
+\midrule
+Benign drift $\max|v(s)|$ & 0.0104 & 0.0063 \\
+Valid test cases          & 6 / 19 & 8 / 19 \\
+\midrule
+Anchored Shapley          & \textbf{1.00} & \textbf{1.00} \\
+Per-node drift            & 0.50 & 0.62 \\
+Shapley                   & 1.00 & \textbf{0.50} \\
+Leave-one-out             & 1.00 & \textbf{0.50} \\
+Stagewise                 & 1.00 & \textbf{0.50} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Leave-one-out fails on real data.} On the synthetic workload it scored
+$1.00$ and was separable from the anchored value only on the efficiency property.
+Here, wherever the fault is smaller than the benign weekday/weekend shift, it
+drops to $0.00$ alongside plain Shapley and stagewise, and the anchored value
+alone holds at $1.00$ (Fig.~\ref{fig:main}b). Real drift is large and asymmetric
+in a way our generator's was not: Saturday differs from Monday in trip distance,
+hour distribution and tipping behaviour simultaneously, so removing a source from
+the full coalition---exactly what leave-one-out does---moves the utility more
+than the injected fault does. Anchoring removes that term by construction instead
+of competing with it.
+
+\textbf{Exclusions.} Only 6--8 of 19 configurations are valid test cases. Two
+rules apply, both stated before results were read. First, \emph{the injected
+fault causes no damage in isolation} (11 configurations): all four
+\texttt{broken\_join\_key} levels and all three \texttt{join\_fanout} levels.
+Duplicating rows in the zone lookup is textbook join fan-out, but a left join on
+\texttt{DOLocationID} reproduces the same borough value, so it reweights the
+training set uniformly and costs nothing; scoring a method for failing to blame
+an operator that caused no harm would penalise it for being right. Second,
+\emph{the fault is harmful but benign drift offset it} (2 configurations). The
+second rule is itself a finding: on real data a genuine fault can be masked
+entirely by a favourable partition, and a monitor watching only end-to-end model
+quality would not fire at all.
+
+\subsection{Scale}
+
+A generated fan-in DAG with $m$ source branches ($n = 3m+3$) gives the cost
+figures in Table~\ref{tab:scale}.
+
+\begin{table}[t]
+\caption{Cost as DAG width grows}
+\label{tab:scale}
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+$n$ & $2^n$ & Fits & Cache hit & $|F|$ & MC time \\
+\midrule
+6  & 64            & 4  & 91.3\% & 2  & $<$0.01 s \\
+9  & 512           & 8  & 98.5\% & 3  & $<$0.01 s \\
+12 & 4{,}096       & 16 & 99.7\% & 4  & $<$0.01 s \\
+15 & 32{,}768      & 3  & 99.4\% & 5  & 0.19 s \\
+21 & $2.1\times10^6$ & 3 & 99.7\% & 7  & 0.41 s \\
+27 & $1.3\times10^8$ & 3 & 99.8\% & 9  & 0.68 s \\
+33 & $8.6\times10^9$ & 3 & 99.8\% & 11 & 0.99 s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{How to read this.} The headline ratio is real but is \emph{not} a
+function of $n$. Only three distinct sink states exist in this workload, because
+every other operator is state-insensitive and its flip is caught by the output
+hash before any model is fit. Cost tracks $|F|$, not $|V|$. That identifies its
+own failure mode: the reduction collapses when a change touches many operators
+simultaneously---a shared library upgrade, a global config change, a backfill.
+
+\section{Related Work}
+
+\textsc{mlinspect}~\cite{mlinspect,mlinspectj} extracts a dataflow DAG from a
+pipeline and propagates lineage annotations to detect data-distribution bugs. It
+is the closest prior art and is complementary: it inspects one execution, whereas
+we compare two and attribute a quantity. Its DAG extraction is what a production
+implementation of our method should reuse.
+
+\textsc{ShapleyPipe}~\cite{shapleypipe} applies Shapley values to pipeline
+operators for \emph{construction}---which operator to select to maximise offline
+accuracy. That is a design-time AutoML question over a space of candidate
+pipelines; ours is a run-time forensic question about one deployed pipeline whose
+inputs changed. The player sets, games and answers differ.
+
+Data valuation methods value \emph{training examples}; we value \emph{operators}.
+The estimation techniques transfer; the semantics do not. Data-quality
+systems~\cite{deequ} verify declarative constraints, and our benign controls show
+constraint violation and model damage are distinct. The anchored value's
+restriction to feasible coalitions relates to conjunctive permission
+structures~\cite{permission} and, when coalitions must be DAG-connected, the
+Myerson value~\cite{myerson}; we state the connection without proving a
+characterisation. Recent benchmarks such as ELT-Bench~\cite{eltbench} evaluate
+whether agents can \emph{author} pipelines; we ask which operator in an existing
+pipeline broke. A body of recent work addresses ``AI-powered data pipeline
+observability,'' predominantly in preprint repositories and low-tier venues,
+without formal guarantees, ground-truth benchmarks, or reproducible artifacts.
+
+\section{Limitations}\label{sec:limits}
+
+\textbf{One real dataset, one pipeline shape.} Whether the crossover sits at the
+same ratio for other domains, and for deep rather than wide pipelines, is
+untested.
+
+\textbf{The fault suite is weaker than intended.} Eleven of nineteen taxi
+configurations were excluded because the injected fault does no damage, leaving
+the real-data conclusion resting on eight test cases.
+
+\textbf{Few valid cases at the crossover.} The regime separating the anchored
+value from every baseline contains four configurations below $r=1$. The
+separation is clean---$1.00$ against $0.00$---but it is four points, not a curve.
+
+\textbf{The probe set must exist.} The method rests on a fixed evaluation set
+representing ground truth. Where labels arrive with long delay, $u$ is not
+computable as defined. This is the most serious practical limitation.
+
+\textbf{Deterministic utility.} We use a deterministic learner with common random
+numbers. For stochastic learners $u$ is a random variable, efficiency holds only
+in expectation, and existing Shapley concentration bounds---which assume a
+deterministic oracle---do not directly apply.
+
+\textbf{Anchor choice is a modelling decision.} If a source change is itself the
+repairable fault---a misconfigured extraction job rather than genuine world
+drift---anchoring hides the culprit by construction. Detecting that case is
+unsolved.
+
+\textbf{Hashing requires determinism.} Operators involving sampling, timestamps,
+or \texttt{ORDER BY} without a total order break output-stability pruning.
+
+\textbf{A methodological note.} Three of our injected faults measured no damage
+for reasons unrelated to the method: a pure rescale that downstream
+standardisation undid, a label recomputed from the corrupted columns so the
+target moved with the features, and a join fault against a feature the workload
+gave no signal to. All three looked like plausible faults and none was. Any
+fault-injection benchmark in this space must \emph{verify} that each injected
+fault degrades the model before scoring attribution against it.
+
+\section{Conclusion}
+
+Attributing model degradation to pipeline operators can be posed as a cooperative
+game over hybrid replays of a fixed pipeline across two temporal snapshots. The
+Shapley value decomposes degradation exactly but ranks poorly under co-occurring
+benign drift. The incident-anchored Shapley value recovers both standard Shapley
+and leave-one-out as boundary cases, ranks perfectly across every severity regime
+tested, preserves exact decomposition, and---unlike leave-one-out---survives real
+day-over-day drift.
+
+Open problems, in the order we would attack them: an axiomatic characterisation
+of $\phi^B$ and its precise relation to the conjunctive permission value;
+automatic anchor selection, distinguishing genuine exogenous drift from a
+repairable extraction fault; concentration bounds under a stochastic utility
+oracle; the broad-change regime where the active frontier is large and pruning
+fails; and federated attribution across data silos without centralising raw data.
+
+\section*{Reproducibility}
+
+All numbers are produced by the accompanying artifact; every experiment runs in
+under two minutes on a laptop. The boundary theorems are asserted to machine
+precision before any result is reported.
+
+\begin{thebibliography}{00}
+
+\bibitem{mlinspect} S. Grafberger, S. Schelter \emph{et al.}, ``mlinspect: a data distribution debugger for machine learning pipelines,'' in \emph{Proc. ACM SIGMOD}, 2021.
+
+\bibitem{mlinspectj} S. Grafberger \emph{et al.}, ``Data distribution debugging in machine learning pipelines,'' \emph{The VLDB Journal}, 2022.
+
+\bibitem{shapleypipe} ``ShapleyPipe: hierarchical Shapley search for data preparation pipeline construction,'' arXiv:2510.27168, 2025.
+
+\bibitem{deequ} S. Schelter \emph{et al.}, ``Automating large-scale data quality verification,'' in \emph{Proc. VLDB Endowment}, 2018.
+
+\bibitem{openlineage} OpenLineage, ``An open framework for data lineage collection and analysis.'' [Online]. Available: \url{https://openlineage.io}
+
+\bibitem{permission} R. van den Brink and R. P. Gilles, ``Axiomatizations of the conjunctive permission value for games with permission structures,'' \emph{Games and Economic Behavior}, vol. 12, no. 1, pp. 113--126, 1996.
+
+\bibitem{myerson} R. B. Myerson, ``Graphs and cooperation in games,'' \emph{Mathematics of Operations Research}, vol. 2, no. 3, pp. 225--229, 1977.
+
+\bibitem{eltbench} ``ELT-Bench: an end-to-end benchmark for evaluating AI agents on ELT pipelines,'' \emph{Proc. VLDB Endowment}.
+
+\end{thebibliography}
+
+\end{document}

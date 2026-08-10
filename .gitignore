@@ -1,0 +1,9 @@
+# Downloaded and generated data — see DATA.md. Never commit these.
+data/*.parquet
+data/*.csv
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/

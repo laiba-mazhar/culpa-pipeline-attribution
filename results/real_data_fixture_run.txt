@@ -1,0 +1,93 @@
+================================================================================================
+FIXTURE (synthetic, real schema)
+reference day = 2024-01-05   incident day = 2024-01-06   probe day = 2024-01-12
+
+probe: 28,858 trips, 0.622 generous-tip rate, 20 features
+
+================================================================================================
+FAULT: unit_change   (operator: derive_time)
+severity                          v(V)     fault     drift       r  shap  anch   loo drift stage   top-blame
+------------------------------------------------------------------------------------------------
+/30                            -0.0008   -0.0000   +0.0009    0.03     0     0     0     0     0   encode  (no net degradation)
+/10                            -0.0007   -0.0001   +0.0009    0.07     0     0     0     0     0   encode  (no net degradation)
+/2                             -0.0007   -0.0001   +0.0009    0.09     0     0     0     1     0   encode  (no net degradation)
+seconds                        -0.0007   -0.0001   +0.0009    0.10     0     0     0     1     0   encode  (no net degradation)
+
+================================================================================================
+FAULT: predicate_flip   (operator: filter_valid)
+severity                          v(V)     fault     drift       r  shap  anch   loo drift stage   top-blame
+------------------------------------------------------------------------------------------------
+fare>5                         -0.0009   -0.0000   +0.0009    0.02     0     0     0     0     0   derive_time  (no net degradation)
+fare>10                        -0.0015   -0.0004   +0.0009    0.50     0     1     0     0     0   filter_valid  (no net degradation)
+fare>20                        -0.0048   -0.0045   +0.0009    5.27     1     1     1     0     1   filter_valid
+fare>35                        -0.0096   -0.0076   +0.0009    8.89     1     1     1     0     1   filter_valid
+
+================================================================================================
+FAULT: broken_join_key   (operator: join_pu_zone)
+severity                          v(V)     fault     drift       r  shap  anch   loo drift stage   top-blame
+------------------------------------------------------------------------------------------------
+20%                            -0.0009   +0.0000   +0.0009    0.04     0     1     0     0     0   join_pu_zone  (no net degradation)
+50%                            -0.0007   -0.0002   +0.0009    0.18     0     0     0     0     0   derive_time  (no net degradation)
+80%                            -0.0009   -0.0004   +0.0009    0.43     0     1     0     0     0   join_pu_zone  (no net degradation)
+100%                           -0.1915   -0.1901   +0.0009  223.28     1     1     1     0     1   join_pu_zone
+
+================================================================================================
+FAULT: join_fanout   (operator: join_do_zone)
+severity                          v(V)     fault     drift       r  shap  anch   loo drift stage   top-blame
+------------------------------------------------------------------------------------------------
+20%                            -0.0009   -0.0000   +0.0009    0.03     0     1     0     0     0   join_do_zone  (no net degradation)
+50%                            -0.0010   -0.0000   +0.0009    0.01     0     1     0     0     0   join_do_zone  (no net degradation)
+100%                           -0.0009   -0.0000   +0.0009    0.00     0     0     0     0     0   derive_time  (no net degradation)
+
+================================================================================================
+FAULT: schema_drift   (operator: encode)
+severity                          v(V)     fault     drift       r  shap  anch   loo drift stage   top-blame
+------------------------------------------------------------------------------------------------
+drop hour                      -0.0030   -0.0022   +0.0009    2.64     1     1     1     0     1   encode
+drop distance                  -0.0015   -0.0008   +0.0009    0.99     0     1     0     0     0   encode  (no net degradation)
+drop distance+duration         -0.0016   -0.0009   +0.0009    1.09     1     1     1     0     0   encode  (no net degradation)
+drop distance+duration+fare    -0.0254   -0.0253   +0.0009   29.67     1     1     1     0     1   encode
+
+================================================================================================
+SUMMARY -- 5 genuinely degraded of 19 configurations
+
+method             p@1     MRR
+------------------------------
+shapley           1.00    1.00
+anchored          1.00    1.00
+loo               1.00    1.00
+drift             0.00    0.35
+stagewise         1.00    1.00
+
+p@1 by fault-to-drift ratio
+
+bin          n    shapley   anchored        loo      drift  stagewise
+----------------------------------------------------------------
+r > 2        5       1.00       1.00       1.00       0.00       1.00
+
+anchored efficiency  max = 2.78e-17
+LOO      efficiency  max = 1.15e-03   mean = 2.78e-04
+
+cost: n = 9 operators, 512 coalitions -> 4-4 model fits, cache hit 98.8%-99.3%, frontier 2-2
+
+no net degradation (v(V) > -0.002), so attribution is undefined and these are excluded: unit_change//30, unit_change//10, unit_change//2, unit_change/seconds, predicate_flip/fare>5, predicate_flip/fare>10, broken_join_key/20%, broken_join_key/50%, broken_join_key/80%, join_fanout/20%, join_fanout/50%, join_fanout/100%, schema_drift/drop distance, schema_drift/drop distance+duration
+
+wrote C:\Users\laiba\Documents\CULPA\results\real_data_fixture.csv
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+BENIGN DRIFT IS NEGLIGIBLE: max |v(source)| = 0.00085 < 0.002
+
+The two partitions are near-identical in distribution, so there is no
+confounding drift for anchoring to remove. Plain Shapley and the anchored
+value necessarily agree here, and the p@1 comparison above carries no
+information about which estimator is better. It shows only that the code
+path runs end to end on this schema.
+
+To make this experiment informative, run it on partitions that genuinely
+differ -- a weekday against a weekend, or either side of a holiday:
+    python -m experiments.real_data --real --days 8,13,10
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+NOTE: this ran on the fixture. The benign drift is synthetic, which is
+exactly the weakness this experiment exists to remove. Re-run with
+--real once the TLC files are in data/ (see DATA.md).

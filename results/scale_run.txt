@@ -1,0 +1,28 @@
+  m    n       2^n   fits  reduction   cache   |F|   exact s    mc s   mc err
+----------------------------------------------------------------------------------
+  1    6        64      4      16.0x  91.3%     2      0.03    0.00   0.0000
+  2    9       512      8      64.0x  98.5%     3      0.20    0.00   0.0000
+  3   12      4096     16     256.0x  99.7%     4      1.39    0.00   0.0000
+  4   15     32768      3   10922.7x  99.4%     5       nan    0.20      nan
+  5   18    262144      3   87381.3x  99.6%     6       nan    0.32      nan
+  6   21   2097152      3  699050.7x  99.7%     7       nan    0.41      nan
+  8   27 134217728      3 44739242.7x  99.8%     9       nan    0.68      nan
+ 10   33 8589934592      3 2863311530.7x  99.8%    11       nan    0.99      nan
+
+culprit identified correctly at every measurable width (8/8): True
+frontier grows 2 -> 11 while n grows 6 -> 33: one drifting source per branch, plus the one faulted aggregate.
+
+HOW TO READ THE REDUCTION COLUMN
+------------------------------------------------------------
+The headline ratio (up to 2.9e9x at n=33) is real but it is not a
+function of n. Only 3 distinct sink states exist in this workload --
+baseline, anchor-only, and anchor-plus-the-faulted-aggregate -- because
+every other operator is state-insensitive and its flip is caught by the
+output hash before any model is fit. The cost of the method therefore
+tracks |F|, the active frontier, and not the size of the DAG.
+
+That is the claim worth making, and it is the one to stress-test next:
+the reduction collapses when a change touches many operators at once
+(a shared library upgrade, a global config change, a backfill). Those
+cases are absent from this sweep and belong in the evaluation.
+wrote C:\Users\laiba\Documents\CULPA\results\scale.csv
