@@ -1,13 +1,45 @@
-# CULPA
+<h1 align="center">CULPA</h1>
 
-**Counterfactual Utility-Loss Pipeline Attribution** — attributing machine
-learning model degradation to individual ETL pipeline operators.
+<p align="center">
+  <b>Counterfactual Utility-Loss Pipeline Attribution</b><br>
+  Attributing machine learning model degradation to individual ETL pipeline operators.
+</p>
 
-Your Airflow DAG ran fine on Monday. Tuesday's model is 6 AUC points worse and
-nobody deployed anything. *Which task caused it?*
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
+  <img src="https://img.shields.io/badge/deps-pandas%20%7C%20numpy%20%7C%20scikit--learn-lightgrey" alt="Dependencies">
+  <img src="https://img.shields.io/badge/runtime-%3C2%20min%20on%20a%20laptop-orange" alt="Runtime">
+</p>
 
-CULPA answers that with a number per operator, and the numbers sum exactly to
-the degradation you observed.
+---
+
+> Your Airflow DAG ran fine on Monday. Tuesday's model is 6 AUC points worse and
+> nobody deployed anything. **Which task caused it?**
+
+Today that question is answered by hand, over hours, in a Slack thread. CULPA
+answers it with a number per operator — and the numbers **sum exactly** to the
+degradation you observed.
+
+```
+observed degradation  v(V) = -0.1149 AUC
+sum of attributions        = -0.1149   (efficiency gap 2.78e-17)
+
+  agg_transactions   -0.0996     <- the silent unit change
+  load_customers     -0.0201        benign day-over-day drift
+  load_transactions  +0.0048        benign day-over-day drift
+  clean_customers     0.0000
+  join_features       0.0000
+  filter_active       0.0000
+  encode_features     0.0000
+```
+
+![Main result](figures/main_result.png)
+
+*Precision@1 against the fault-to-drift ratio `r`. The anchored value is flat at
+1.00 in every regime. On real NYC taxi data (right), leave-one-out collapses
+alongside plain Shapley and current practice — the anchored value is the only
+estimator that survives realistic drift.*
 
 ## How
 
@@ -54,7 +86,10 @@ because removing a source moves the utility more than the injected fault does.
 
 ## Documents
 
-- **[PAPER.md](PAPER.md)** — the paper draft. Start here.
+- **[paper/paper.tex](paper/paper.tex)** — the paper in IEEE conference format
+  (`IEEEtran`). Self-contained: upload `paper/` to Overleaf and compile.
+- **[PAPER.md](PAPER.md)** — the same paper in Markdown, easier to read on
+  GitHub. Start here.
 - **[DATA.md](DATA.md)** — the two files to download for the real-data
   experiment, and how to pick day pairs that make it informative
 - [FINDINGS.md](FINDINGS.md) — the gate experiment's negative result and how it
