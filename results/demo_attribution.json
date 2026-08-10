@@ -1,0 +1,50 @@
+{
+  "fixture": false,
+  "ref_day": 8,
+  "inc_day": 13,
+  "probe_day": 10,
+  "faults": {
+    "filter_valid": "{'min_fare': 20.0}",
+    "encode": "{'drop_columns': ['trip_distance', 'duration', 'fare_amount']}"
+  },
+  "culprits": [
+    "encode",
+    "filter_valid"
+  ],
+  "delta": -0.03789349538242637,
+  "anchor_value": -0.006281858189761458,
+  "attribution": {
+    "derive_time": 0.0,
+    "encode": -0.014512924259034537,
+    "filter_valid": -0.017098712933630352,
+    "join_do_zone": 0.0,
+    "join_pu_zone": 0.0,
+    "join_stats": 0.0,
+    "zone_stats": 0.0,
+    "load_zones": 0.0,
+    "load_trips": 0.0
+  },
+  "operators": [
+    "derive_time",
+    "encode",
+    "filter_valid",
+    "join_do_zone",
+    "join_pu_zone",
+    "join_stats",
+    "load_trips",
+    "load_zones",
+    "zone_stats"
+  ],
+  "sources": [
+    "load_trips",
+    "load_zones"
+  ],
+  "lattice": 512,
+  "model_fits": 5,
+  "cache_hit_rate": 0.9681309216192937,
+  "frontier": [
+    "encode",
+    "filter_valid",
+    "load_trips"
+  ]
+}

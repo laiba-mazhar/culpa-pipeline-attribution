@@ -1,0 +1,35 @@
+
+  INCIDENT                                                      
+  --------------------------------------------------------------
+  pipeline          NYC yellow taxi, 9 operators
+  reference run     2024-01-08  (Monday)
+  incident run      2024-01-13  (Saturday)
+  model             generous-tip classifier
+  what changed      nothing was deployed
+
+  AUC dropped by    0.0379
+
+  BLAME                                                         
+  --------------------------------------------------------------
+        filter_valid  -0.0171  ############################|                              <-- culprit
+              encode  -0.0145      ########################|                              <-- culprit
+         derive_time  +0.0000                              |                            
+        join_do_zone  +0.0000                              |                            
+        join_pu_zone  +0.0000                              |                            
+          join_stats  +0.0000                              |                            
+          zone_stats  +0.0000                              |                            
+          load_zones  +0.0000                              |                              (anchored: exogenous)
+          load_trips  +0.0000                              |                              (anchored: exogenous)
+
+                 sum  -0.0316
+          to explain  -0.0316   (v(V) minus the anchored drift)
+                 gap 2.08e-17
+
+  COST                                                          
+  --------------------------------------------------------------
+  coalitions in the lattice   512
+  model fits actually run     5
+  operator cache hit rate     96.8%
+  active frontier             3 of 9 operators
+
+  wrote C:\Users\laiba\Documents\CULPA\results\demo_attribution.json

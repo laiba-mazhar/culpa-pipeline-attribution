@@ -98,6 +98,85 @@ def panel(ax, rows, title):
         ax.spines[s].set_linewidth(0.6)
 
 
+# Diverging pair for the attribution chart: blame has polarity (harm vs help)
+# around a zero baseline, so it takes two hues plus a neutral midpoint -- not a
+# categorical ramp. Both hues are drawn from the same CVD-safe set.
+HARM = "#D55E00"
+HELP = "#0072B2"
+NEUTRAL = "#c8c8c8"
+
+
+def attribution_figure() -> None:
+    """The tool's actual output for one incident: blame per operator."""
+    src = RESULTS / "demo_attribution.json"
+    if not src.exists():
+        print(f"skipping attribution figure; run experiments.demo first")
+        return
+
+    import json
+    d = json.loads(src.read_text(encoding="utf-8"))
+    attr: Dict[str, float] = d["attribution"]
+    culprits = set(d["culprits"])
+    sources = set(d["sources"])
+
+    items = sorted(attr.items(), key=lambda kv: kv[1], reverse=True)
+    names = [k for k, _ in items]
+    vals = [v for _, v in items]
+
+    fig, ax = plt.subplots(figsize=(7.0, 3.4))
+    colours = [HARM if v < -1e-9 else HELP if v > 1e-9 else NEUTRAL for v in vals]
+    ys = range(len(names))
+    ax.barh(list(ys), vals, height=0.62, color=colours, linewidth=0)
+
+    span = max(abs(v) for v in vals) or 1.0
+    for y, (name, v) in enumerate(zip(names, vals)):
+        pad = span * 0.035
+        if abs(v) < 1e-9:
+            ax.text(pad, y, "0.0000  no contribution", va="center", ha="left",
+                    fontsize=7, color="#777777")
+        else:
+            ax.text(v - pad if v < 0 else v + pad, y, f"{v:+.4f}",
+                    va="center", ha="right" if v < 0 else "left",
+                    fontsize=7.5, color="#333333")
+
+    labels = []
+    for n in names:
+        if n in culprits:
+            labels.append(f"{n}  <-- CULPRIT")
+        elif n in sources:
+            labels.append(f"{n}  (anchored)")
+        else:
+            labels.append(n)
+    ax.set_yticks(list(ys))
+    ax.set_yticklabels(labels, fontsize=8)
+
+    ax.axvline(0, color="#666666", linewidth=0.8)
+    ax.set_xlim(-span * 1.45, span * 1.25)
+    ax.set_xlabel("contribution to the AUC change  (negative = caused harm)", fontsize=8)
+    ax.set_title(
+        f"Blame for a compound incident: {abs(d['delta']):.4f} AUC lost, "
+        f"decomposed exactly", fontsize=9, pad=8)
+    ax.tick_params(axis="x", labelsize=7.5)
+    ax.grid(axis="x", color="#e8e8e8", linewidth=0.5)
+    ax.set_axisbelow(True)
+    for s in ("top", "right", "left"):
+        ax.spines[s].set_visible(False)
+    ax.spines["bottom"].set_color("#999999")
+    ax.spines["bottom"].set_linewidth(0.6)
+
+    gap = abs(sum(vals) - (d["delta"] - d["anchor_value"]))
+    fig.text(0.5, -0.02,
+             f"attributions sum to {sum(vals):+.4f}; the degradation left to "
+             f"explain is {d['delta'] - d['anchor_value']:+.4f}   (gap {gap:.0e})",
+             ha="center", fontsize=7.5, color="#555555")
+
+    fig.tight_layout()
+    for out in (FIGURES / "attribution.png", FIGURES / "attribution.pdf"):
+        fig.savefig(out, dpi=300, bbox_inches="tight")
+        print(f"wrote {out}")
+    plt.close(fig)
+
+
 def main() -> None:
     FIGURES.mkdir(exist_ok=True)
     plt.rcParams.update({
@@ -128,6 +207,9 @@ def main() -> None:
         out.parent.mkdir(exist_ok=True)
         fig.savefig(out, dpi=300, bbox_inches="tight")
         print(f"wrote {out}")
+    plt.close(fig)
+
+    attribution_figure()
 
     print(f"\nsynthetic: {len(synthetic)} valid cases; real: {len(real)} valid cases")
 
