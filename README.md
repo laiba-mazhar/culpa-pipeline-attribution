@@ -1,16 +1,24 @@
-<h1 align="center">CULPA</h1>
+<h1 align="center">🔍 CULPA</h1>
 
 <p align="center">
-  <b>Counterfactual Utility-Loss Pipeline Attribution</b><br>
-  <i>Which task in your ETL pipeline broke the model?</i>
+  <b>C</b>ounterfactual <b>U</b>tility-<b>L</b>oss <b>P</b>ipeline <b>A</b>ttribution
+</p>
+
+<h3 align="center"><i>Which task in your ETL pipeline broke the model?</i></h3>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.10+">
+  <img src="https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white" alt="pandas">
+  <img src="https://img.shields.io/badge/NumPy-4DABCF?style=for-the-badge&logo=numpy&logoColor=white" alt="NumPy">
+  <img src="https://img.shields.io/badge/scikit--learn-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white" alt="scikit-learn">
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+">
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
-  <img src="https://img.shields.io/badge/deps-pandas%20%7C%20numpy%20%7C%20scikit--learn-lightgrey" alt="Dependencies">
-  <img src="https://img.shields.io/badge/runs%20in-%3C2%20min-orange" alt="Runtime">
-  <img src="https://img.shields.io/badge/data-NYC%20TLC%20taxi-9cf" alt="Real data">
+  <img src="https://img.shields.io/badge/License-MIT-2EA043?style=for-the-badge" alt="MIT License">
+  <img src="https://img.shields.io/badge/Runs%20in-under%202%20min-8B5CF6?style=for-the-badge" alt="Runtime">
+  <img src="https://img.shields.io/badge/Real%20data-NYC%20TLC%20taxi-0EA5E9?style=for-the-badge" alt="NYC TLC taxi">
+  <img src="https://img.shields.io/badge/Paper-IEEE%20format-B31B1B?style=for-the-badge&logo=latex&logoColor=white" alt="IEEE format paper">
+  <img src="https://img.shields.io/badge/Exact%20decomposition-2.8e--17-DB2777?style=for-the-badge" alt="Efficiency gap 2.8e-17">
 </p>
 
 ---
