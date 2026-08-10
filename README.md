@@ -170,8 +170,13 @@ Two findings worth pulling out:
 
 **Current practice is provably arbitrary.** Walking the DAG in topological order
 and swapping stages one at a time is the marginal-contribution vector of a
-*single permutation*. On the same incident, two valid topological orders give
-`load_customers = −0.0556` and `+0.0405`. **The sign flips.**
+*single permutation*. Enumerating **every** valid topological order across four
+scenarios, **8 of 28 operator/scenario pairs get blame of both signs** — the
+spread reaches 0.096 AUC on incidents worth 0.03–0.11 AUC. On the schema-drift
+scenario, stagewise blames an innocent *source* operator in **all six orders**
+and never the culprit.
+
+![Order dependence](figures/order_dependence.png)
 
 **Not every data-quality violation is an incident.** Uniform join fan-out (35%
 duplicate keys) and MCAR nullness (55% of rows dropped) fire every constraint a
