@@ -199,10 +199,18 @@ Everything runs in under two minutes on a laptop. No GPU.
 
 ## Documents
 
+<p align="center">
+  <a href="paper/paper.pdf"><img src="https://img.shields.io/badge/Read%20the%20paper-PDF%2C%205%20pages-B31B1B?style=for-the-badge&logo=adobeacrobatreader&logoColor=white" alt="Read the paper (PDF)"></a>
+  <a href="https://www.overleaf.com/docs?snip_uri=https://github.com/laiba-mazhar/culpa-pipeline-attribution/raw/main/paper/culpa-paper-ieee.zip"><img src="https://img.shields.io/badge/Open%20in-Overleaf-47A141?style=for-the-badge&logo=overleaf&logoColor=white" alt="Open in Overleaf"></a>
+  <a href="paper/culpa-paper-ieee.zip"><img src="https://img.shields.io/badge/Download-LaTeX%20source%20zip-6366F1?style=for-the-badge" alt="Download LaTeX zip"></a>
+</p>
+
 | | |
 |---|---|
-| **[PAPER.md](PAPER.md)** | the paper — start here |
-| [paper/paper.tex](paper/paper.tex) | same paper in IEEE conference format, ready for Overleaf |
+| **[paper/paper.pdf](paper/paper.pdf)** | the compiled paper, IEEE two-column, 5 pages |
+| [PAPER.md](PAPER.md) | the same paper in Markdown, easier to read on GitHub |
+| [paper/paper.tex](paper/paper.tex) | LaTeX source (`IEEEtran`, conference format) |
+| [paper/culpa-paper-ieee.zip](paper/culpa-paper-ieee.zip) | self-contained archive — source, figure, and `IEEEtran.cls` |
 | [DATA.md](DATA.md) | the two files to download, and how to pick day pairs |
 | [FINDINGS.md](FINDINGS.md) | the negative result that forced the reformulation |
 | [PROPOSAL.md](PROPOSAL.md) | original plan — superseded, kept for the related-work survey |
