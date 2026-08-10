@@ -32,8 +32,8 @@ columns vanished after an upstream rename.
 
 ```mermaid
 flowchart LR
-    A["load_trips<br/><i>day partition</i>"]:::src
-    B["load_zones<br/><i>zone lookup</i>"]:::src
+    A["load_trips<br/>day partition"]:::src
+    B["load_zones<br/>zone lookup"]:::src
     C["filter_valid"]:::bad
     D["derive_time"]:::ok
     E["zone_stats"]:::ok
