@@ -140,9 +140,15 @@ prefixes.
 | n = 21 | 2,097,152 | 3 | 99.7% |
 | n = 33 | 8,589,934,592 | 3 | 99.8% |
 
+![Cost scaling](figures/cost_scaling.png)
+
 Cost tracks the **active frontier**, not the size of the DAG. That also names its
 own failure mode: a change touching many operators at once — a library upgrade,
 a backfill — collapses the saving. That case is not yet evaluated.
+
+*(The step at n = 15 is an artifact of the method, not the workload: exact
+Shapley runs up to n = 14 and evaluates more coalitions than the sampled
+estimator used beyond it.)*
 
 ## The research result
 
@@ -166,6 +172,24 @@ as boundary cases, and beats both.
 | plain Shapley | 0.60 | 0.50 | yes |
 | stagewise (what people do today) | 0.33 | 0.50 | no |
 
+**Why leave-one-out only fails on real data.** Which two days you compare decides
+whether the question even arises:
+
+| | Mon 8 vs **Tue 9** | Mon 8 vs **Sat 13** |
+|---|---|---|
+| benign drift | 0.0104 | 0.0063 |
+| valid test cases | 6 / 19 | 8 / 19 |
+| **anchored Shapley** | **1.00** | **1.00** |
+| leave-one-out | 1.00 | **0.50** |
+| plain Shapley | 1.00 | **0.50** |
+| stagewise | 1.00 | **0.50** |
+
+Two adjacent weekdays barely differ, so every method ties. Against a Saturday,
+trip distance, hour distribution and tipping all shift at once — and removing a
+source from the full coalition, which is exactly what leave-one-out does, moves
+the utility more than the injected fault does. Anchoring removes that term by
+construction instead of competing with it.
+
 Two findings worth pulling out:
 
 **Current practice is provably arbitrary.** Walking the DAG in topological order
@@ -178,9 +202,27 @@ and never the culprit.
 
 ![Order dependence](figures/order_dependence.png)
 
-**Not every data-quality violation is an incident.** Uniform join fan-out (35%
-duplicate keys) and MCAR nullness (55% of rows dropped) fire every constraint a
-monitor has, and cost 0.0001 AUC. CULPA correctly assigns them near-zero blame.
+**Not every data-quality violation is an incident.**
+
+| injected fault | constraint checker | actual damage | blame assigned |
+|---|---|---:|---:|
+| uniform join fan-out, 35% dup keys | 🔴 fires | **+0.0001** | 0.0078 |
+| MCAR nullness, 55% of rows dropped | 🔴 fires | **+0.0006** | 0.0085 |
+| silent unit change | 🟢 silent | **−0.1149** | 0.0996 |
+
+The two loudest violations cost nothing. The one that costs 0.11 AUC trips no
+constraint at all. A checker that never looks at the model cannot tell them
+apart — which is the argument for grounding attribution in utility.
+
+The same thing shows up across the whole severity sweep: plenty of injected
+faults simply do no damage, so they have no culprit to find and are excluded
+from scoring rather than counted as failures.
+
+![Severity ladder](figures/severity_ladder.png)
+
+Note the green line. Schema drift is *not* monotone in severity — **which**
+column you drop matters far more than how many. Dropping `tenure` costs an order
+of magnitude more than dropping `total_amount`.
 
 ## Quick start
 
@@ -252,6 +294,23 @@ Stated up front because reviewers find them anyway, and the full list is in
 - **The anchor is a modelling choice.** If a source change is itself the
   repairable fault — a misconfigured extraction job rather than real world drift
   — anchoring hides it by construction.
+
+## Authors
+
+**Laiba Mazhar** — Data Scientist, Lahore, Pakistan · [lm4442172@gmail.com](mailto:lm4442172@gmail.com)
+**Maryam Sarfraz** — Computer Scientist, Lahore, Pakistan · [sarfrazmaryam123@gmail.com](mailto:sarfrazmaryam123@gmail.com)
+
+## Citing this work
+
+```bibtex
+@misc{mazhar2026culpa,
+  title  = {Anchored Counterfactual Attribution of Model Degradation
+            to {ETL} Pipeline Operators},
+  author = {Mazhar, Laiba and Sarfraz, Maryam},
+  year   = {2026},
+  note   = {\url{https://github.com/laiba-mazhar/culpa-pipeline-attribution}}
+}
+```
 
 ## License
 
