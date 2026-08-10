@@ -25,10 +25,17 @@
 
 \title{Anchored Counterfactual Attribution of Model\\Degradation to ETL Pipeline Operators}
 
-\author{\IEEEauthorblockN{Laiba Mazhar}
-\IEEEauthorblockA{\textit{Independent Researcher}\\
+\author{
+\IEEEauthorblockN{Laiba Mazhar}
+\IEEEauthorblockA{\textit{Data Scientist}\\
 Lahore, Pakistan\\
-lm4442172@gmail.com}}
+lm4442172@gmail.com}
+\and
+\IEEEauthorblockN{Maryam Sarfraz}
+\IEEEauthorblockA{\textit{Computer Scientist}\\
+Lahore, Pakistan\\
+sarfrazmaryam123@gmail.com}
+}
 
 \maketitle
 
@@ -557,30 +564,80 @@ change, a backfill.
 
 \section{Related Work}
 
+\subsection{Debugging and Orchestrating ML Pipelines}
+
 \textsc{mlinspect}~\cite{mlinspect,mlinspectj} extracts a dataflow DAG from a
 pipeline and propagates lineage annotations to detect data-distribution bugs. It
 is the closest prior art and is complementary: it inspects one execution, whereas
 we compare two and attribute a quantity. Its DAG extraction is what a production
-implementation of our method should reuse.
+implementation of our method should reuse. \textsc{Modyn}~\cite{modyn} treats the
+pipeline itself as the managed object, orchestrating data-centric retraining over
+evolving datasets; it decides \emph{when} to retrain, where we ask why the last
+retrain got worse. Recent position work on next-generation data engineering
+pipelines~\cite{nextgen} argues that pipelines need first-class observability
+semantics rather than bolt-on monitoring, which is the gap this paper addresses
+for one specific question. Lineage systems~\cite{openlineage} supply the
+topology our replay engine consumes but say nothing about magnitude.
+
+\subsection{Shapley Values in Data Management}
 
 \textsc{ShapleyPipe}~\cite{shapleypipe} applies Shapley values to pipeline
 operators for \emph{construction}---which operator to select to maximise offline
 accuracy. That is a design-time AutoML question over a space of candidate
 pipelines; ours is a run-time forensic question about one deployed pipeline whose
-inputs changed. The player sets, games and answers differ.
+inputs changed. The player sets, games and answers differ. A recent
+survey~\cite{shapleysurvey} maps the broader use of Shapley values across data
+analytics, and asymptotic analysis of the dataset-valuation
+game~\cite{asymptotic} characterises its large-sample behaviour.
 
-Data valuation methods value \emph{training examples}; we value \emph{operators}.
-The estimation techniques transfer; the semantics do not. Data-quality
-systems~\cite{deequ} verify declarative constraints, and our benign controls show
-constraint violation and model damage are distinct. The anchored value's
-restriction to feasible coalitions relates to conjunctive permission
-structures~\cite{permission} and, when coalitions must be DAG-connected, the
-Myerson value~\cite{myerson}; we state the connection without proving a
-characterisation. Recent benchmarks such as ELT-Bench~\cite{eltbench} evaluate
-whether agents can \emph{author} pipelines; we ask which operator in an existing
-pipeline broke. A body of recent work addresses ``AI-powered data pipeline
-observability,'' predominantly in preprint repositories and low-tier venues,
-without formal guarantees, ground-truth benchmarks, or reproducible artifacts.
+Efficient estimation is the shared bottleneck. \textsc{ShaplEIG}~\cite{shapleig}
+selects which coalitions to evaluate by Bayesian experimental design, which is
+directly applicable to our setting because our value function is expensive for
+exactly the reason theirs is---each evaluation trains a model.
+\textsc{OperatorSHAP}~\cite{operatorshap} accelerates estimation in a different
+operator-valued setting. Our output-hash pruning is complementary to both: it
+removes evaluations rather than choosing among them, and it composes with any
+sampling scheme.
+
+\subsection{Data Valuation}
+
+Data valuation methods value \emph{training examples}; we value
+\emph{operators}. The estimation machinery transfers, the semantics do not.
+Recent work values data for LLM alignment via
+Shapley~\cite{llmvaluation} and argues for influence-based auditing as a cheaper
+alternative~\cite{beyondshapley}. The same efficiency-versus-fidelity tension
+appears here, and is why we report exact values wherever brute force is
+affordable.
+
+\subsection{Data Quality and Agent Benchmarks}
+
+Data-quality systems~\cite{deequ} verify declarative constraints, and
+\textsc{SPADE}~\cite{spade} synthesises such assertions automatically for LLM
+pipelines. Our benign controls (Table~\ref{tab:benign}) show that constraint
+violation and model damage are distinct properties: a checker that never looks at
+the model cannot separate them. Benchmarks such as
+ELT-Bench~\cite{eltbench} and \textsc{DataGovBench}~\cite{datagovbench} evaluate
+whether agents can \emph{author} or \emph{govern} pipelines; we ask which
+operator in an existing pipeline broke.
+
+\subsection{Root Cause Analysis}
+
+Root-cause analysis for production systems has matured towards causal
+formulations~\cite{causalrca} and agentic, evidence-grounded
+reasoning~\cite{agenticrca}. Both target service-level incidents where the signal
+is telemetry; our object is a dataflow DAG and our signal is model utility, which
+admits the exact decomposition telemetry-based methods cannot offer. A further
+body of recent work addresses ``AI-powered data pipeline observability,''
+predominantly in preprint repositories and low-tier venues, without formal
+guarantees, ground-truth benchmarks, or reproducible artifacts.
+
+\subsection{Cooperative Game Theory}
+
+The anchored value's restriction to feasible coalitions relates to conjunctive
+permission structures~\cite{permission} and, when coalitions must be
+DAG-connected, the Myerson value~\cite{myerson}. We state the connection without
+proving a characterisation; doing so is the first open problem in
+Sec.~\ref{sec:conclusion}.
 
 \section{Limitations}\label{sec:limits}
 
@@ -621,7 +678,7 @@ gave no signal to. All three looked like plausible faults and none was. Any
 fault-injection benchmark in this space must \emph{verify} that each injected
 fault degrades the model before scoring attribution against it.
 
-\section{Conclusion}
+\section{Conclusion}\label{sec:conclusion}
 
 Attributing model degradation to pipeline operators can be posed as a cooperative
 game over hybrid replays of a fixed pipeline across two temporal snapshots. The
@@ -648,19 +705,43 @@ precision before any result is reported.
 
 \bibitem{mlinspect} S. Grafberger, S. Schelter \emph{et al.}, ``mlinspect: a data distribution debugger for machine learning pipelines,'' in \emph{Proc. ACM SIGMOD}, 2021.
 
-\bibitem{mlinspectj} S. Grafberger \emph{et al.}, ``Data distribution debugging in machine learning pipelines,'' \emph{The VLDB Journal}, 2022.
+\bibitem{mlinspectj} S. Grafberger \emph{et al.}, ``Data distribution debugging in machine learning pipelines,'' \emph{The VLDB Journal}, vol. 31, 2022.
 
-\bibitem{shapleypipe} ``ShapleyPipe: hierarchical Shapley search for data preparation pipeline construction,'' arXiv:2510.27168, 2025.
+\bibitem{modyn} M. B\"other \emph{et al.}, ``Modyn: data-centric machine learning pipeline orchestration,'' arXiv:2312.06254, Dec. 2023.
 
-\bibitem{deequ} S. Schelter \emph{et al.}, ``Automating large-scale data quality verification,'' in \emph{Proc. VLDB Endowment}, 2018.
+\bibitem{nextgen} K. M. Kramer \emph{et al.}, ``Towards next generation data engineering pipelines,'' arXiv:2507.13892, Jul. 2025.
 
 \bibitem{openlineage} OpenLineage, ``An open framework for data lineage collection and analysis.'' [Online]. Available: \url{https://openlineage.io}
+
+\bibitem{shapleypipe} J. Chang, C. Liu, J. Huang, S. Zheng, R. Mao, and J. Qin, ``ShapleyPipe: hierarchical Shapley search for data preparation pipeline construction,'' arXiv:2510.27168, Oct. 2025.
+
+\bibitem{shapleysurvey} H. Lin \emph{et al.}, ``A comprehensive study of Shapley value in data analytics,'' arXiv:2412.01460, Dec. 2024.
+
+\bibitem{asymptotic} M. Tamine \emph{et al.}, ``An asymptotic analysis of the Shapley value for dataset valuation,'' arXiv:2607.03374, Jul. 2026.
+
+\bibitem{shapleig} D. Rundel \emph{et al.}, ``ShaplEIG: Bayesian experimental design for Shapley value estimation,'' arXiv:2606.02247, Jun. 2026.
+
+\bibitem{operatorshap} J. Stiller \emph{et al.}, ``OperatorSHAP: fast and accurate Shapley value estimation for neural operators,'' arXiv:2606.28065, Jun. 2026.
+
+\bibitem{llmvaluation} M. Tamine \emph{et al.}, ``Shapley-based data valuation for LLM alignment via sequential preference optimization,'' arXiv:2512.15765, Dec. 2025.
+
+\bibitem{beyondshapley} Y. Song \emph{et al.}, ``Beyond Shapley: an influence-based data auditing pipeline for LLM alignment and evaluation,'' arXiv:2607.22766, Jul. 2026.
+
+\bibitem{deequ} S. Schelter \emph{et al.}, ``Automating large-scale data quality verification,'' \emph{Proc. VLDB Endowment}, vol. 11, no. 12, 2018.
+
+\bibitem{spade} S. Shankar \emph{et al.}, ``SPADE: synthesizing data quality assertions for large language model pipelines,'' arXiv:2401.03038, Jan. 2024.
+
+\bibitem{eltbench} ``ELT-Bench: an end-to-end benchmark for evaluating AI agents on ELT pipelines,'' \emph{Proc. VLDB Endowment}. doi:10.14778/3773749.3773750.
+
+\bibitem{datagovbench} Z. Liu \emph{et al.}, ``DataGovBench: benchmarking LLM agents for real-world data governance workflows,'' arXiv:2512.04416, Dec. 2025.
+
+\bibitem{causalrca} S. Jha \emph{et al.}, ``Causal AI-based root cause identification: research to practice at scale,'' arXiv:2502.18240, Feb. 2025.
+
+\bibitem{agenticrca} A. Wei \emph{et al.}, ``Agentic root cause analysis through evidence-grounded reasoning,'' arXiv:2607.22385, Jul. 2026.
 
 \bibitem{permission} R. van den Brink and R. P. Gilles, ``Axiomatizations of the conjunctive permission value for games with permission structures,'' \emph{Games and Economic Behavior}, vol. 12, no. 1, pp. 113--126, 1996.
 
 \bibitem{myerson} R. B. Myerson, ``Graphs and cooperation in games,'' \emph{Mathematics of Operations Research}, vol. 2, no. 3, pp. 225--229, 1977.
-
-\bibitem{eltbench} ``ELT-Bench: an end-to-end benchmark for evaluating AI agents on ELT pipelines,'' \emph{Proc. VLDB Endowment}.
 
 \end{thebibliography}
 

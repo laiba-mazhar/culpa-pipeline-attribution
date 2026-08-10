@@ -1,6 +1,9 @@
 # Anchored Counterfactual Attribution of Model Degradation to ETL Pipeline Operators
 
-**Laiba Mazhar**
+**Laiba Mazhar**¹ · **Maryam Sarfraz**²
+
+¹ Data Scientist, Lahore, Pakistan — lm4442172@gmail.com
+² Computer Scientist, Lahore, Pakistan — sarfrazmaryam123@gmail.com
 
 Draft v1 — August 2026. All numbers produced by `experiments/` in this
 repository; logs in `results/`.
@@ -603,20 +606,29 @@ Open problems, in the order we would attack them:
 
 ## References
 
-1. Deequ / Great Expectations — declarative data-quality constraint verification.
-2. OpenLineage / dbt — dataset and column-level lineage.
-3. Grafberger, S., Schelter, S. et al. *mlinspect: a Data Distribution Debugger
-   for Machine Learning Pipelines.* SIGMOD 2021 (demo).
-4. Grafberger, S. et al. *Data distribution debugging in machine learning
-   pipelines.* The VLDB Journal, 2022.
-5. *ShapleyPipe: Hierarchical Shapley Search for Data Preparation Pipeline
-   Construction.* arXiv:2510.27168, Oct 2025.
-6. Gilles, R., Owen, G., van den Brink, R. — games with permission structures;
-   the conjunctive permission value.
-7. Myerson, R. *Graphs and cooperation in games.* Mathematics of Operations
-   Research, 1977.
-8. *ELT-Bench: An End-to-End Benchmark for Evaluating AI Agents on ELT
-   Pipelines.* PVLDB.
+All 20 references were verified to exist (arXiv IDs, titles and author lists
+checked against the arXiv API) rather than reconstructed from memory.
+
+1. S. Grafberger, S. Schelter et al. *mlinspect: a Data Distribution Debugger for Machine Learning Pipelines.* SIGMOD 2021 (demo).
+2. S. Grafberger et al. *Data distribution debugging in machine learning pipelines.* The VLDB Journal 31, 2022.
+3. M. Bother et al. *Modyn: Data-Centric Machine Learning Pipeline Orchestration.* arXiv:2312.06254, Dec 2023.
+4. K. M. Kramer et al. *Towards Next Generation Data Engineering Pipelines.* arXiv:2507.13892, Jul 2025.
+5. OpenLineage. *An open framework for data lineage collection and analysis.* https://openlineage.io
+6. J. Chang, C. Liu, J. Huang, S. Zheng, R. Mao, J. Qin. *ShapleyPipe: Hierarchical Shapley Search for Data Preparation Pipeline Construction.* arXiv:2510.27168, Oct 2025.
+7. H. Lin et al. *A Comprehensive Study of Shapley Value in Data Analytics.* arXiv:2412.01460, Dec 2024.
+8. M. Tamine et al. *An Asymptotic Analysis of the Shapley Value for Dataset Valuation.* arXiv:2607.03374, Jul 2026.
+9. D. Rundel et al. *ShaplEIG: Bayesian Experimental Design for Shapley Value Estimation.* arXiv:2606.02247, Jun 2026.
+10. J. Stiller et al. *OperatorSHAP: Fast and Accurate Shapley Value Estimation for Neural Operators.* arXiv:2606.28065, Jun 2026.
+11. M. Tamine et al. *Shapley-based Data Valuation for LLM Alignment via Sequential Preference Optimization.* arXiv:2512.15765, Dec 2025.
+12. Y. Song et al. *Beyond Shapley: An Influence-Based Data Auditing Pipeline for LLM Alignment and Evaluation.* arXiv:2607.22766, Jul 2026.
+13. S. Schelter et al. *Automating large-scale data quality verification.* PVLDB 11(12), 2018.
+14. S. Shankar et al. *SPADE: Synthesizing Data Quality Assertions for Large Language Model Pipelines.* arXiv:2401.03038, Jan 2024.
+15. *ELT-Bench: An End-to-End Benchmark for Evaluating AI Agents on ELT Pipelines.* PVLDB, doi:10.14778/3773749.3773750.
+16. Z. Liu et al. *DataGovBench: Benchmarking LLM Agents for Real-World Data Governance Workflows.* arXiv:2512.04416, Dec 2025.
+17. S. Jha et al. *Causal AI-based Root Cause Identification: Research to Practice at Scale.* arXiv:2502.18240, Feb 2025.
+18. A. Wei et al. *Agentic Root Cause Analysis through Evidence-Grounded Reasoning.* arXiv:2607.22385, Jul 2026.
+19. R. van den Brink, R. P. Gilles. *Axiomatizations of the conjunctive permission value for games with permission structures.* Games and Economic Behavior 12(1), 113-126, 1996.
+20. R. B. Myerson. *Graphs and cooperation in games.* Mathematics of Operations Research 2(3), 225-229, 1977.
 
 ---
 
@@ -624,9 +636,12 @@ Open problems, in the order we would attack them:
 
 ```bash
 pip install -r requirements.txt
-python -m experiments.gate       # §6.2, §3.1
-python -m experiments.severity   # §6.3, §6.4  (boundary theorems asserted)
-python -m experiments.scale      # §6.6
+python -m experiments.gate
+python -m experiments.severity
+python -m experiments.scale
+python -m experiments.order_dependence
+python -m experiments.demo
+python -m experiments.real_data --real --days 8,13,10
 ```
 
 Total runtime under two minutes on a laptop. Logs in `results/`.

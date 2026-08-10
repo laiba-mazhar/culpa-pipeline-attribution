@@ -21,8 +21,8 @@
     "join_pu_zone": 0.0,
     "join_stats": 0.0,
     "zone_stats": 0.0,
-    "load_zones": 0.0,
-    "load_trips": 0.0
+    "load_trips": 0.0,
+    "load_zones": 0.0
   },
   "operators": [
     "derive_time",
